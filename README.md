@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
   # Internal Sales CRM UI Design
 
@@ -9,3 +10,6 @@
 
   Run `npm run dev` to start the development server.
   
+=======
+# internal_sale_crm
+>>>>>>> 18084f6359b52e442e2624df2a1ef70e80192917
