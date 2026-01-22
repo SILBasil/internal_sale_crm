@@ -1,11 +1,24 @@
+# Internal Sales CRM
 
-  # Internal Sales CRM UI Design
+A professional, high-performance web application designed for managing internal sales operations, customer relationships, and sales representative metrics.
 
-  This is a code bundle for Internal Sales CRM UI Design. The original project is available at https://www.figma.com/design/1OwWMRVnY3okqMhIZxFhK9/Internal-Sales-CRM-UI-Design.
+## 🚀 Key Features
 
-  ## Running the code
+- **Dashboard Overview**: Real-time sales stats and goal tracking.
+- **Customer Management**: Robust tools for lead capture, duplication checking, and editing.
+- **User Management**: Administrative controls for sales team roles.
+- **Modern UI/UX**: Built with React, Tailwind CSS 4, and Radix UI.
 
-  Run `npm i` to install the dependencies.
+## 🛠️ Development
 
-  Run `npm run dev` to start the development server.
-  
+### Installation
+
+```bash
+npm install
+```
+
+### Run Locally
+
+```bash
+npm run dev
+```
