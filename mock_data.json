@@ -1,0 +1,1203 @@
+{
+  "users": [
+    {
+      "email": "admin@company.com",
+      "password": "admin123",
+      "name": "Somchai (Admin)",
+      "role": "admin",
+      "id": "U001"
+    },
+    {
+      "email": "sales1@company.com",
+      "password": "sales123",
+      "name": "Sompong",
+      "role": "sales",
+      "id": "U002"
+    },
+    {
+      "email": "sales2@company.com",
+      "password": "sales223",
+      "name": "Wichai",
+      "role": "sales",
+      "id": "U003"
+    },
+    {
+      "email": "sales3@company.com",
+      "password": "sales323",
+      "name": "Anan",
+      "role": "sales",
+      "id": "U004"
+    },
+    {
+      "email": "sales4@company.com",
+      "password": "sales423",
+      "name": "Somsak",
+      "role": "sales",
+      "id": "U005"
+    },
+    {
+      "email": "sales5@company.com",
+      "password": "sales523",
+      "name": "Preecha",
+      "role": "sales",
+      "id": "U006"
+    },
+    {
+      "email": "sales6@company.com",
+      "password": "sales623",
+      "name": "Suwit",
+      "role": "sales",
+      "id": "U007"
+    },
+    {
+      "email": "sales7@company.com",
+      "password": "sales723",
+      "name": "Kittisak",
+      "role": "sales",
+      "id": "U008"
+    },
+    {
+      "email": "sales8@company.com",
+      "password": "sales823",
+      "name": "Chaiwat",
+      "role": "sales",
+      "id": "U009"
+    },
+    {
+      "email": "sales9@company.com",
+      "password": "sales923",
+      "name": "Narong",
+      "role": "sales",
+      "id": "U010"
+    },
+    {
+      "email": "sales10@company.com",
+      "password": "sales1023",
+      "name": "Prasit",
+      "role": "sales",
+      "id": "U011"
+    }
+  ],
+  "customers": [
+    {
+      "id": "C001",
+      "name": "บริษัท ABC จำกัด 1",
+      "date": "13 Jan 2026",
+      "createdAt": "2026-01-13T10:12:02.545054Z",
+      "phoneNumbers": [
+        "0827737845"
+      ],
+      "email": "customer1@example.com",
+      "idCard": "6476546123240",
+      "status": "pending",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C002",
+      "name": "ร้านค้า XYZ จำกัด 2",
+      "date": "15 Jan 2026",
+      "createdAt": "2026-01-15T22:12:02.545111Z",
+      "phoneNumbers": [
+        "0859051395"
+      ],
+      "email": "customer2@example.com",
+      "idCard": "2312585925163",
+      "status": "pending",
+      "ownerId": "U002",
+      "ownerName": "Sompong"
+    },
+    {
+      "id": "C003",
+      "name": "ไทยเจริญ เซอร์วิส 3",
+      "date": "21 Jan 2026",
+      "createdAt": "2026-01-21T22:12:02.545129Z",
+      "phoneNumbers": [
+        "0893566512"
+      ],
+      "email": "customer3@example.com",
+      "idCard": "4466191620537",
+      "status": "new",
+      "ownerId": "U009",
+      "ownerName": "Chaiwat"
+    },
+    {
+      "id": "C004",
+      "name": "บริษัท DEF กรุ๊ป 4",
+      "date": "22 Jan 2026",
+      "createdAt": "2026-01-22T12:12:02.545142Z",
+      "phoneNumbers": [
+        "0875764520"
+      ],
+      "email": "customer4@example.com",
+      "idCard": "3691497399680",
+      "status": "pending",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C005",
+      "name": "บริษัท ABC เซอร์วิส 5",
+      "date": "19 Jan 2026",
+      "createdAt": "2026-01-19T08:12:02.545152Z",
+      "phoneNumbers": [
+        "0897233189"
+      ],
+      "email": "customer5@example.com",
+      "idCard": "2686190378822",
+      "status": "active",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C006",
+      "name": "โชคดี กรุ๊ป 6",
+      "date": "01 Jan 2026",
+      "createdAt": "2026-01-01T12:12:02.545162Z",
+      "phoneNumbers": [
+        "0855953735"
+      ],
+      "email": "customer6@example.com",
+      "idCard": "7665768792743",
+      "status": "pending",
+      "ownerId": "U007",
+      "ownerName": "Suwit"
+    },
+    {
+      "id": "C007",
+      "name": "SME Solutions เซอร์วิส 7",
+      "date": "05 Jan 2026",
+      "createdAt": "2026-01-05T07:12:02.545172Z",
+      "phoneNumbers": [
+        "0884009037"
+      ],
+      "email": "customer7@example.com",
+      "idCard": "9077855368147",
+      "status": "pending",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C008",
+      "name": "ร้านค้า XYZ พานิช 8",
+      "date": "29 Dec 2025",
+      "createdAt": "2025-12-29T07:12:02.545182Z",
+      "phoneNumbers": [
+        "0828873324"
+      ],
+      "email": "customer8@example.com",
+      "idCard": "2891941003209",
+      "status": "new",
+      "ownerId": "U008",
+      "ownerName": "Kittisak"
+    },
+    {
+      "id": "C009",
+      "name": "ร้านค้า XYZ คอร์ปอเรชั่น 9",
+      "date": "16 Jan 2026",
+      "createdAt": "2026-01-16T13:12:02.545193Z",
+      "phoneNumbers": [
+        "0858389380"
+      ],
+      "email": "customer9@example.com",
+      "idCard": "7257089668566",
+      "status": "pending",
+      "ownerId": "U005",
+      "ownerName": "Somsak"
+    },
+    {
+      "id": "C010",
+      "name": "บริษัท DEF กรุ๊ป 10",
+      "date": "23 Jan 2026",
+      "createdAt": "2026-01-23T14:12:02.545208Z",
+      "phoneNumbers": [
+        "0854550711"
+      ],
+      "email": "customer10@example.com",
+      "idCard": "5723569276949",
+      "status": "pending",
+      "ownerId": "U009",
+      "ownerName": "Chaiwat"
+    },
+    {
+      "id": "C011",
+      "name": "แสงทอง พานิช 11",
+      "date": "18 Jan 2026",
+      "createdAt": "2026-01-18T14:12:02.545218Z",
+      "phoneNumbers": [
+        "0816883781"
+      ],
+      "email": "customer11@example.com",
+      "idCard": "3080109685763",
+      "status": "new",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C012",
+      "name": "ร้านค้า XYZ กรุ๊ป 12",
+      "date": "23 Jan 2026",
+      "createdAt": "2026-01-23T11:12:02.545228Z",
+      "phoneNumbers": [
+        "0871454149"
+      ],
+      "email": "customer12@example.com",
+      "idCard": "7385149849940",
+      "status": "active",
+      "ownerId": "U009",
+      "ownerName": "Chaiwat"
+    },
+    {
+      "id": "C013",
+      "name": "บริษัท DEF พานิช 13",
+      "date": "07 Jan 2026",
+      "createdAt": "2026-01-07T18:12:02.545237Z",
+      "phoneNumbers": [
+        "0898897829"
+      ],
+      "email": "customer13@example.com",
+      "idCard": "1575232752370",
+      "status": "active",
+      "ownerId": "U010",
+      "ownerName": "Narong"
+    },
+    {
+      "id": "C014",
+      "name": "ไทยเจริญ เซอร์วิส 14",
+      "date": "01 Jan 2026",
+      "createdAt": "2026-01-01T06:12:02.545247Z",
+      "phoneNumbers": [
+        "0875168858"
+      ],
+      "email": "customer14@example.com",
+      "idCard": "8699048626470",
+      "status": "new",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C015",
+      "name": "บริษัท ABC จำกัด 15",
+      "date": "30 Dec 2025",
+      "createdAt": "2025-12-30T03:12:02.545257Z",
+      "phoneNumbers": [
+        "0820365169"
+      ],
+      "email": "customer15@example.com",
+      "idCard": "1883762344997",
+      "status": "new",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C016",
+      "name": "ไทยเจริญ พานิช 16",
+      "date": "24 Jan 2026",
+      "createdAt": "2026-01-24T12:12:02.545268Z",
+      "phoneNumbers": [
+        "0858379872"
+      ],
+      "email": "customer16@example.com",
+      "idCard": "6939066405479",
+      "status": "new",
+      "ownerId": "U005",
+      "ownerName": "Somsak"
+    },
+    {
+      "id": "C017",
+      "name": "แสงทอง เซอร์วิส 17",
+      "date": "28 Dec 2025",
+      "createdAt": "2025-12-28T15:12:02.545278Z",
+      "phoneNumbers": [
+        "0896261026"
+      ],
+      "email": "customer17@example.com",
+      "idCard": "5728987313654",
+      "status": "pending",
+      "ownerId": "U006",
+      "ownerName": "Preecha"
+    },
+    {
+      "id": "C018",
+      "name": "ห้างหุ้นส่วน GHI เซอร์วิส 18",
+      "date": "09 Jan 2026",
+      "createdAt": "2026-01-09T22:12:02.545288Z",
+      "phoneNumbers": [
+        "0879602496"
+      ],
+      "email": "customer18@example.com",
+      "idCard": "7734818696272",
+      "status": "pending",
+      "ownerId": "U002",
+      "ownerName": "Sompong"
+    },
+    {
+      "id": "C019",
+      "name": "ห้างหุ้นส่วน GHI พานิช 19",
+      "date": "29 Dec 2025",
+      "createdAt": "2025-12-29T07:12:02.545300Z",
+      "phoneNumbers": [
+        "0810707555"
+      ],
+      "email": "customer19@example.com",
+      "idCard": "5913463407394",
+      "status": "pending",
+      "ownerId": "U002",
+      "ownerName": "Sompong"
+    },
+    {
+      "id": "C020",
+      "name": "รุ่งเรือง เซอร์วิส 20",
+      "date": "14 Jan 2026",
+      "createdAt": "2026-01-14T10:12:02.545310Z",
+      "phoneNumbers": [
+        "0866509580"
+      ],
+      "email": "customer20@example.com",
+      "idCard": "3427224206740",
+      "status": "active",
+      "ownerId": "U006",
+      "ownerName": "Preecha"
+    },
+    {
+      "id": "C021",
+      "name": "บริษัท ABC กรุ๊ป 21",
+      "date": "05 Jan 2026",
+      "createdAt": "2026-01-05T14:12:02.545319Z",
+      "phoneNumbers": [
+        "0871447064"
+      ],
+      "email": "customer21@example.com",
+      "idCard": "9279384577315",
+      "status": "pending",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C022",
+      "name": "SME Solutions เซอร์วิส 22",
+      "date": "08 Jan 2026",
+      "createdAt": "2026-01-08T07:12:02.545329Z",
+      "phoneNumbers": [
+        "0836064306"
+      ],
+      "email": "customer22@example.com",
+      "idCard": "6521562539623",
+      "status": "pending",
+      "ownerId": "U007",
+      "ownerName": "Suwit"
+    },
+    {
+      "id": "C023",
+      "name": "บริษัท ABC คอร์ปอเรชั่น 23",
+      "date": "09 Jan 2026",
+      "createdAt": "2026-01-09T08:12:02.545338Z",
+      "phoneNumbers": [
+        "0877050296"
+      ],
+      "email": "customer23@example.com",
+      "idCard": "3530437507714",
+      "status": "active",
+      "ownerId": "U005",
+      "ownerName": "Somsak"
+    },
+    {
+      "id": "C024",
+      "name": "ห้างหุ้นส่วน GHI กรุ๊ป 24",
+      "date": "03 Jan 2026",
+      "createdAt": "2026-01-03T03:12:02.545350Z",
+      "phoneNumbers": [
+        "0889556770"
+      ],
+      "email": "customer24@example.com",
+      "idCard": "7715074341147",
+      "status": "pending",
+      "ownerId": "U006",
+      "ownerName": "Preecha"
+    },
+    {
+      "id": "C025",
+      "name": "รุ่งเรือง เซอร์วิส 25",
+      "date": "12 Jan 2026",
+      "createdAt": "2026-01-12T02:12:02.545360Z",
+      "phoneNumbers": [
+        "0851460204"
+      ],
+      "email": "customer25@example.com",
+      "idCard": "2286439910945",
+      "status": "pending",
+      "ownerId": "U006",
+      "ownerName": "Preecha"
+    },
+    {
+      "id": "C026",
+      "name": "มั่นคงพานิช จำกัด 26",
+      "date": "20 Jan 2026",
+      "createdAt": "2026-01-20T10:12:02.545371Z",
+      "phoneNumbers": [
+        "0869834573"
+      ],
+      "email": "customer26@example.com",
+      "idCard": "7543075378699",
+      "status": "new",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C027",
+      "name": "บริษัท DEF จำกัด 27",
+      "date": "04 Jan 2026",
+      "createdAt": "2026-01-04T12:12:02.545380Z",
+      "phoneNumbers": [
+        "0852484979"
+      ],
+      "email": "customer27@example.com",
+      "idCard": "1029555652189",
+      "status": "new",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C028",
+      "name": "แสงทอง กรุ๊ป 28",
+      "date": "22 Jan 2026",
+      "createdAt": "2026-01-22T18:12:02.545393Z",
+      "phoneNumbers": [
+        "0890318304"
+      ],
+      "email": "customer28@example.com",
+      "idCard": "1422285011241",
+      "status": "pending",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C029",
+      "name": "แสงทอง จำกัด 29",
+      "date": "13 Jan 2026",
+      "createdAt": "2026-01-13T14:12:02.545403Z",
+      "phoneNumbers": [
+        "0886765467"
+      ],
+      "email": "customer29@example.com",
+      "idCard": "5654341627243",
+      "status": "pending",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C030",
+      "name": "โชคดี เซอร์วิส 30",
+      "date": "27 Dec 2025",
+      "createdAt": "2025-12-27T19:12:02.545413Z",
+      "phoneNumbers": [
+        "0847221906"
+      ],
+      "email": "customer30@example.com",
+      "idCard": "7663812199284",
+      "status": "active",
+      "ownerId": "U009",
+      "ownerName": "Chaiwat"
+    },
+    {
+      "id": "C031",
+      "name": "บริษัท DEF คอร์ปอเรชั่น 31",
+      "date": "09 Jan 2026",
+      "createdAt": "2026-01-09T22:12:02.545423Z",
+      "phoneNumbers": [
+        "0852953441"
+      ],
+      "email": "customer31@example.com",
+      "idCard": "9002546274049",
+      "status": "new",
+      "ownerId": "U005",
+      "ownerName": "Somsak"
+    },
+    {
+      "id": "C032",
+      "name": "แสงทอง คอร์ปอเรชั่น 32",
+      "date": "20 Jan 2026",
+      "createdAt": "2026-01-20T03:12:02.545433Z",
+      "phoneNumbers": [
+        "0828055993"
+      ],
+      "email": "customer32@example.com",
+      "idCard": "6142318171393",
+      "status": "active",
+      "ownerId": "U008",
+      "ownerName": "Kittisak"
+    },
+    {
+      "id": "C033",
+      "name": "ห้างหุ้นส่วน GHI เซอร์วิส 33",
+      "date": "11 Jan 2026",
+      "createdAt": "2026-01-11T15:12:02.545442Z",
+      "phoneNumbers": [
+        "0822933964"
+      ],
+      "email": "customer33@example.com",
+      "idCard": "9947636362554",
+      "status": "pending",
+      "ownerId": "U005",
+      "ownerName": "Somsak"
+    },
+    {
+      "id": "C034",
+      "name": "โชคดี กรุ๊ป 34",
+      "date": "02 Jan 2026",
+      "createdAt": "2026-01-02T14:12:02.545451Z",
+      "phoneNumbers": [
+        "0874831164"
+      ],
+      "email": "customer34@example.com",
+      "idCard": "7644521430553",
+      "status": "active",
+      "ownerId": "U008",
+      "ownerName": "Kittisak"
+    },
+    {
+      "id": "C035",
+      "name": "ห้างหุ้นส่วน GHI คอร์ปอเรชั่น 35",
+      "date": "17 Jan 2026",
+      "createdAt": "2026-01-17T18:12:02.545461Z",
+      "phoneNumbers": [
+        "0819049109"
+      ],
+      "email": "customer35@example.com",
+      "idCard": "4929020884592",
+      "status": "new",
+      "ownerId": "U007",
+      "ownerName": "Suwit"
+    },
+    {
+      "id": "C036",
+      "name": "แสงทอง กรุ๊ป 36",
+      "date": "01 Jan 2026",
+      "createdAt": "2026-01-01T02:12:02.545472Z",
+      "phoneNumbers": [
+        "0888705778"
+      ],
+      "email": "customer36@example.com",
+      "idCard": "3906727378754",
+      "status": "active",
+      "ownerId": "U007",
+      "ownerName": "Suwit"
+    },
+    {
+      "id": "C037",
+      "name": "บริษัท DEF คอร์ปอเรชั่น 37",
+      "date": "01 Jan 2026",
+      "createdAt": "2026-01-01T23:12:02.545484Z",
+      "phoneNumbers": [
+        "0893651768"
+      ],
+      "email": "customer37@example.com",
+      "idCard": "1013942202227",
+      "status": "new",
+      "ownerId": "U005",
+      "ownerName": "Somsak"
+    },
+    {
+      "id": "C038",
+      "name": "SME Solutions พานิช 38",
+      "date": "20 Jan 2026",
+      "createdAt": "2026-01-20T23:12:02.545494Z",
+      "phoneNumbers": [
+        "0863225006"
+      ],
+      "email": "customer38@example.com",
+      "idCard": "2585531832281",
+      "status": "active",
+      "ownerId": "U010",
+      "ownerName": "Narong"
+    },
+    {
+      "id": "C039",
+      "name": "มั่นคงพานิช เซอร์วิส 39",
+      "date": "23 Jan 2026",
+      "createdAt": "2026-01-23T16:12:02.545504Z",
+      "phoneNumbers": [
+        "0812755032"
+      ],
+      "email": "customer39@example.com",
+      "idCard": "3660762769783",
+      "status": "pending",
+      "ownerId": "U010",
+      "ownerName": "Narong"
+    },
+    {
+      "id": "C040",
+      "name": "SME Solutions กรุ๊ป 40",
+      "date": "20 Jan 2026",
+      "createdAt": "2026-01-20T15:12:02.545513Z",
+      "phoneNumbers": [
+        "0846173972"
+      ],
+      "email": "customer40@example.com",
+      "idCard": "9856710998046",
+      "status": "active",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C041",
+      "name": "โชคดี เซอร์วิส 41",
+      "date": "24 Jan 2026",
+      "createdAt": "2026-01-24T12:12:02.545525Z",
+      "phoneNumbers": [
+        "0897398880"
+      ],
+      "email": "customer41@example.com",
+      "idCard": "5857242408078",
+      "status": "new",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C042",
+      "name": "ห้างหุ้นส่วน GHI เซอร์วิส 42",
+      "date": "15 Jan 2026",
+      "createdAt": "2026-01-15T22:12:02.545535Z",
+      "phoneNumbers": [
+        "0884473886"
+      ],
+      "email": "customer42@example.com",
+      "idCard": "8542590904577",
+      "status": "pending",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C043",
+      "name": "บริษัท DEF เซอร์วิส 43",
+      "date": "20 Jan 2026",
+      "createdAt": "2026-01-20T08:12:02.545544Z",
+      "phoneNumbers": [
+        "0817079309"
+      ],
+      "email": "customer43@example.com",
+      "idCard": "6626641676647",
+      "status": "active",
+      "ownerId": "U002",
+      "ownerName": "Sompong"
+    },
+    {
+      "id": "C044",
+      "name": "มั่นคงพานิช คอร์ปอเรชั่น 44",
+      "date": "25 Jan 2026",
+      "createdAt": "2026-01-25T06:12:02.545554Z",
+      "phoneNumbers": [
+        "0866036840"
+      ],
+      "email": "customer44@example.com",
+      "idCard": "8955921968467",
+      "status": "active",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C045",
+      "name": "ห้างหุ้นส่วน GHI กรุ๊ป 45",
+      "date": "03 Jan 2026",
+      "createdAt": "2026-01-03T02:12:02.545566Z",
+      "phoneNumbers": [
+        "0819322853"
+      ],
+      "email": "customer45@example.com",
+      "idCard": "2607629904689",
+      "status": "pending",
+      "ownerId": "U007",
+      "ownerName": "Suwit"
+    },
+    {
+      "id": "C046",
+      "name": "SME Solutions คอร์ปอเรชั่น 46",
+      "date": "10 Jan 2026",
+      "createdAt": "2026-01-10T05:12:02.545577Z",
+      "phoneNumbers": [
+        "0826759345"
+      ],
+      "email": "customer46@example.com",
+      "idCard": "3789789890581",
+      "status": "new",
+      "ownerId": "U002",
+      "ownerName": "Sompong"
+    },
+    {
+      "id": "C047",
+      "name": "บริษัท DEF พานิช 47",
+      "date": "06 Jan 2026",
+      "createdAt": "2026-01-06T15:12:02.545587Z",
+      "phoneNumbers": [
+        "0845827648"
+      ],
+      "email": "customer47@example.com",
+      "idCard": "6156056988250",
+      "status": "active",
+      "ownerId": "U005",
+      "ownerName": "Somsak"
+    },
+    {
+      "id": "C048",
+      "name": "ไทยเจริญ เซอร์วิส 48",
+      "date": "08 Jan 2026",
+      "createdAt": "2026-01-08T22:12:02.545596Z",
+      "phoneNumbers": [
+        "0826625118"
+      ],
+      "email": "customer48@example.com",
+      "idCard": "6105982898328",
+      "status": "pending",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C049",
+      "name": "ไทยเจริญ คอร์ปอเรชั่น 49",
+      "date": "27 Dec 2025",
+      "createdAt": "2025-12-27T21:12:02.545606Z",
+      "phoneNumbers": [
+        "0840401159"
+      ],
+      "email": "customer49@example.com",
+      "idCard": "7583402825908",
+      "status": "new",
+      "ownerId": "U007",
+      "ownerName": "Suwit"
+    },
+    {
+      "id": "C050",
+      "name": "บริษัท DEF กรุ๊ป 50",
+      "date": "26 Dec 2025",
+      "createdAt": "2025-12-26T03:12:02.545615Z",
+      "phoneNumbers": [
+        "0840221539"
+      ],
+      "email": "customer50@example.com",
+      "idCard": "7825103858598",
+      "status": "new",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C051",
+      "name": "ร้านค้า XYZ พานิช 51",
+      "date": "19 Jan 2026",
+      "createdAt": "2026-01-19T12:12:02.545625Z",
+      "phoneNumbers": [
+        "0821652975"
+      ],
+      "email": "customer51@example.com",
+      "idCard": "9082633924166",
+      "status": "new",
+      "ownerId": "U008",
+      "ownerName": "Kittisak"
+    },
+    {
+      "id": "C052",
+      "name": "รุ่งเรือง กรุ๊ป 52",
+      "date": "03 Jan 2026",
+      "createdAt": "2026-01-03T08:12:02.545636Z",
+      "phoneNumbers": [
+        "0821855227"
+      ],
+      "email": "customer52@example.com",
+      "idCard": "3890983900157",
+      "status": "pending",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C053",
+      "name": "ไทยเจริญ จำกัด 53",
+      "date": "14 Jan 2026",
+      "createdAt": "2026-01-14T08:12:02.545646Z",
+      "phoneNumbers": [
+        "0816337085"
+      ],
+      "email": "customer53@example.com",
+      "idCard": "4601053870559",
+      "status": "pending",
+      "ownerId": "U002",
+      "ownerName": "Sompong"
+    },
+    {
+      "id": "C054",
+      "name": "บริษัท ABC กรุ๊ป 54",
+      "date": "20 Jan 2026",
+      "createdAt": "2026-01-20T21:12:02.545658Z",
+      "phoneNumbers": [
+        "0812142529"
+      ],
+      "email": "customer54@example.com",
+      "idCard": "2440635601706",
+      "status": "pending",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C055",
+      "name": "ร้านค้า XYZ เซอร์วิส 55",
+      "date": "04 Jan 2026",
+      "createdAt": "2026-01-04T00:12:02.545669Z",
+      "phoneNumbers": [
+        "0837965584"
+      ],
+      "email": "customer55@example.com",
+      "idCard": "2565563515824",
+      "status": "active",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C056",
+      "name": "SME Solutions เซอร์วิส 56",
+      "date": "31 Dec 2025",
+      "createdAt": "2025-12-31T06:12:02.545679Z",
+      "phoneNumbers": [
+        "0890917394"
+      ],
+      "email": "customer56@example.com",
+      "idCard": "8635180820940",
+      "status": "new",
+      "ownerId": "U010",
+      "ownerName": "Narong"
+    },
+    {
+      "id": "C057",
+      "name": "ร้านค้า XYZ กรุ๊ป 57",
+      "date": "29 Dec 2025",
+      "createdAt": "2025-12-29T00:12:02.545689Z",
+      "phoneNumbers": [
+        "0821363890"
+      ],
+      "email": "customer57@example.com",
+      "idCard": "2301279299551",
+      "status": "new",
+      "ownerId": "U008",
+      "ownerName": "Kittisak"
+    },
+    {
+      "id": "C058",
+      "name": "บริษัท DEF พานิช 58",
+      "date": "01 Jan 2026",
+      "createdAt": "2026-01-01T01:12:02.545698Z",
+      "phoneNumbers": [
+        "0829329750"
+      ],
+      "email": "customer58@example.com",
+      "idCard": "1346056932037",
+      "status": "active",
+      "ownerId": "U003",
+      "ownerName": "Wichai"
+    },
+    {
+      "id": "C059",
+      "name": "รุ่งเรือง เซอร์วิส 59",
+      "date": "28 Dec 2025",
+      "createdAt": "2025-12-28T14:12:02.545708Z",
+      "phoneNumbers": [
+        "0877004178"
+      ],
+      "email": "customer59@example.com",
+      "idCard": "4087784976274",
+      "status": "active",
+      "ownerId": "U005",
+      "ownerName": "Somsak"
+    },
+    {
+      "id": "C060",
+      "name": "โชคดี เซอร์วิส 60",
+      "date": "29 Dec 2025",
+      "createdAt": "2025-12-29T19:12:02.545718Z",
+      "phoneNumbers": [
+        "0859721575"
+      ],
+      "email": "customer60@example.com",
+      "idCard": "6060161226636",
+      "status": "pending",
+      "ownerId": "U010",
+      "ownerName": "Narong"
+    },
+    {
+      "id": "C061",
+      "name": "รุ่งเรือง คอร์ปอเรชั่น 61",
+      "date": "27 Dec 2025",
+      "createdAt": "2025-12-27T20:12:02.545728Z",
+      "phoneNumbers": [
+        "0874220313"
+      ],
+      "email": "customer61@example.com",
+      "idCard": "4491956554360",
+      "status": "new",
+      "ownerId": "U003",
+      "ownerName": "Wichai"
+    },
+    {
+      "id": "C062",
+      "name": "SME Solutions คอร์ปอเรชั่น 62",
+      "date": "02 Jan 2026",
+      "createdAt": "2026-01-02T22:12:02.545737Z",
+      "phoneNumbers": [
+        "0839263246"
+      ],
+      "email": "customer62@example.com",
+      "idCard": "9116697277844",
+      "status": "new",
+      "ownerId": "U007",
+      "ownerName": "Suwit"
+    },
+    {
+      "id": "C063",
+      "name": "รุ่งเรือง พานิช 63",
+      "date": "07 Jan 2026",
+      "createdAt": "2026-01-07T18:12:02.545749Z",
+      "phoneNumbers": [
+        "0832596924"
+      ],
+      "email": "customer63@example.com",
+      "idCard": "7201492239569",
+      "status": "pending",
+      "ownerId": "U005",
+      "ownerName": "Somsak"
+    },
+    {
+      "id": "C064",
+      "name": "บริษัท ABC คอร์ปอเรชั่น 64",
+      "date": "08 Jan 2026",
+      "createdAt": "2026-01-08T14:12:02.545759Z",
+      "phoneNumbers": [
+        "0855520976"
+      ],
+      "email": "customer64@example.com",
+      "idCard": "1951051504799",
+      "status": "pending",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C065",
+      "name": "แสงทอง เซอร์วิส 65",
+      "date": "06 Jan 2026",
+      "createdAt": "2026-01-06T21:12:02.545768Z",
+      "phoneNumbers": [
+        "0822590396"
+      ],
+      "email": "customer65@example.com",
+      "idCard": "8161620289893",
+      "status": "pending",
+      "ownerId": "U008",
+      "ownerName": "Kittisak"
+    },
+    {
+      "id": "C066",
+      "name": "มั่นคงพานิช จำกัด 66",
+      "date": "05 Jan 2026",
+      "createdAt": "2026-01-05T03:12:02.545779Z",
+      "phoneNumbers": [
+        "0871582709"
+      ],
+      "email": "customer66@example.com",
+      "idCard": "9946636071896",
+      "status": "active",
+      "ownerId": "U007",
+      "ownerName": "Suwit"
+    },
+    {
+      "id": "C067",
+      "name": "มั่นคงพานิช จำกัด 67",
+      "date": "12 Jan 2026",
+      "createdAt": "2026-01-12T09:12:02.545788Z",
+      "phoneNumbers": [
+        "0867612619"
+      ],
+      "email": "customer67@example.com",
+      "idCard": "6418142803339",
+      "status": "new",
+      "ownerId": "U006",
+      "ownerName": "Preecha"
+    },
+    {
+      "id": "C068",
+      "name": "บริษัท ABC เซอร์วิส 68",
+      "date": "27 Dec 2025",
+      "createdAt": "2025-12-27T12:12:02.545798Z",
+      "phoneNumbers": [
+        "0856419988"
+      ],
+      "email": "customer68@example.com",
+      "idCard": "5862071759012",
+      "status": "active",
+      "ownerId": "U006",
+      "ownerName": "Preecha"
+    },
+    {
+      "id": "C069",
+      "name": "มั่นคงพานิช กรุ๊ป 69",
+      "date": "12 Jan 2026",
+      "createdAt": "2026-01-12T15:12:02.545807Z",
+      "phoneNumbers": [
+        "0841471048"
+      ],
+      "email": "customer69@example.com",
+      "idCard": "4474794245278",
+      "status": "new",
+      "ownerId": "U005",
+      "ownerName": "Somsak"
+    },
+    {
+      "id": "C070",
+      "name": "ไทยเจริญ กรุ๊ป 70",
+      "date": "03 Jan 2026",
+      "createdAt": "2026-01-03T23:12:02.545817Z",
+      "phoneNumbers": [
+        "0869838517"
+      ],
+      "email": "customer70@example.com",
+      "idCard": "2874886672349",
+      "status": "pending",
+      "ownerId": "U010",
+      "ownerName": "Narong"
+    },
+    {
+      "id": "C071",
+      "name": "ร้านค้า XYZ กรุ๊ป 71",
+      "date": "16 Jan 2026",
+      "createdAt": "2026-01-16T08:12:02.545827Z",
+      "phoneNumbers": [
+        "0826725750"
+      ],
+      "email": "customer71@example.com",
+      "idCard": "2967258961619",
+      "status": "new",
+      "ownerId": "U010",
+      "ownerName": "Narong"
+    },
+    {
+      "id": "C072",
+      "name": "ห้างหุ้นส่วน GHI คอร์ปอเรชั่น 72",
+      "date": "07 Jan 2026",
+      "createdAt": "2026-01-07T06:12:02.545839Z",
+      "phoneNumbers": [
+        "0850032642"
+      ],
+      "email": "customer72@example.com",
+      "idCard": "1717964680966",
+      "status": "active",
+      "ownerId": "U006",
+      "ownerName": "Preecha"
+    },
+    {
+      "id": "C073",
+      "name": "มั่นคงพานิช พานิช 73",
+      "date": "19 Jan 2026",
+      "createdAt": "2026-01-19T02:12:02.545849Z",
+      "phoneNumbers": [
+        "0848931406"
+      ],
+      "email": "customer73@example.com",
+      "idCard": "7688758617131",
+      "status": "new",
+      "ownerId": "U002",
+      "ownerName": "Sompong"
+    },
+    {
+      "id": "C074",
+      "name": "มั่นคงพานิช กรุ๊ป 74",
+      "date": "16 Jan 2026",
+      "createdAt": "2026-01-16T14:12:02.545858Z",
+      "phoneNumbers": [
+        "0861366658"
+      ],
+      "email": "customer74@example.com",
+      "idCard": "7154970804710",
+      "status": "pending",
+      "ownerId": "U007",
+      "ownerName": "Suwit"
+    },
+    {
+      "id": "C075",
+      "name": "บริษัท DEF พานิช 75",
+      "date": "07 Jan 2026",
+      "createdAt": "2026-01-07T05:12:02.545870Z",
+      "phoneNumbers": [
+        "0848016514"
+      ],
+      "email": "customer75@example.com",
+      "idCard": "4176504456955",
+      "status": "active",
+      "ownerId": "U011",
+      "ownerName": "Prasit"
+    },
+    {
+      "id": "C076",
+      "name": "ร้านค้า XYZ พานิช 76",
+      "date": "20 Jan 2026",
+      "createdAt": "2026-01-20T18:12:02.545882Z",
+      "phoneNumbers": [
+        "0822438643"
+      ],
+      "email": "customer76@example.com",
+      "idCard": "8389232297866",
+      "status": "active",
+      "ownerId": "U004",
+      "ownerName": "Anan"
+    },
+    {
+      "id": "C077",
+      "name": "มั่นคงพานิช จำกัด 77",
+      "date": "21 Jan 2026",
+      "createdAt": "2026-01-21T02:12:02.545892Z",
+      "phoneNumbers": [
+        "0869862760"
+      ],
+      "email": "customer77@example.com",
+      "idCard": "9613832432013",
+      "status": "active",
+      "ownerId": "U007",
+      "ownerName": "Suwit"
+    },
+    {
+      "id": "C078",
+      "name": "ห้างหุ้นส่วน GHI คอร์ปอเรชั่น 78",
+      "date": "19 Jan 2026",
+      "createdAt": "2026-01-19T23:12:02.545903Z",
+      "phoneNumbers": [
+        "0822235178"
+      ],
+      "email": "customer78@example.com",
+      "idCard": "2838816762502",
+      "status": "pending",
+      "ownerId": "U003",
+      "ownerName": "Wichai"
+    },
+    {
+      "id": "C079",
+      "name": "บริษัท ABC เซอร์วิส 79",
+      "date": "04 Jan 2026",
+      "createdAt": "2026-01-04T03:12:02.545912Z",
+      "phoneNumbers": [
+        "0862676849"
+      ],
+      "email": "customer79@example.com",
+      "idCard": "7781100528839",
+      "status": "active",
+      "ownerId": "U010",
+      "ownerName": "Narong"
+    },
+    {
+      "id": "C080",
+      "name": "SME Solutions กรุ๊ป 80",
+      "date": "29 Dec 2025",
+      "createdAt": "2025-12-29T02:12:02.545924Z",
+      "phoneNumbers": [
+        "0880136161"
+      ],
+      "email": "customer80@example.com",
+      "idCard": "4350778576734",
+      "status": "new",
+      "ownerId": "U006",
+      "ownerName": "Preecha"
+    }
+  ]
+}

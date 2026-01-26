@@ -7,10 +7,11 @@ export interface Customer {
   id: string;
   name: string;
   date: string;
-  phoneNumbers: string[]; // Changed from phone: string to phoneNumbers: string[]
-  email?: string; // Made optional
-  idCard?: string; // Added ID card
-  taxId?: string; // Added tax ID
+  createdAt?: string; // Added createdAt
+  phoneNumbers: string[];
+  email?: string;
+  idCard?: string;
+  taxId?: string;
   status: 'new' | 'active' | 'pending';
   ownerId: string;
   ownerName?: string;
@@ -58,6 +59,7 @@ export function CustomerTable({ customers, onEdit }: CustomerTableProps) {
             <TableHead className="text-xs uppercase text-slate-600">ข้อมูลระบุตัวตน</TableHead>
             <TableHead className="text-xs uppercase text-slate-600">สถานะ</TableHead>
             <TableHead className="text-xs uppercase text-slate-600">ผู้ดูแล</TableHead>
+            <TableHead className="text-xs uppercase text-slate-600">วันที่เพิ่ม</TableHead>
             <TableHead className="text-xs uppercase text-slate-600 text-right">การจัดการ</TableHead>
           </TableRow>
         </TableHeader>
@@ -66,8 +68,7 @@ export function CustomerTable({ customers, onEdit }: CustomerTableProps) {
             <TableRow key={customer.id} className="hover:bg-slate-50 group">
               <TableCell>
                 <div>
-                  <p className="text-slate-900">{customer.name}</p>
-                  <p className="text-sm text-slate-500">{customer.date}</p>
+                  <p className="text-slate-900 font-medium">{customer.name}</p>
                 </div>
               </TableCell>
               <TableCell>
@@ -112,9 +113,19 @@ export function CustomerTable({ customers, onEdit }: CustomerTableProps) {
                 </Badge>
               </TableCell>
               <TableCell>
-                <code className="text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded font-mono">
-                  {customer.ownerId}
-                </code>
+                <p className="text-sm text-slate-700 font-medium">
+                  {customer.ownerName || customer.ownerId}
+                </p>
+                <p className="text-[10px] text-slate-400 font-mono leading-none">{customer.ownerId}</p>
+              </TableCell>
+              <TableCell>
+                <p className="text-sm text-slate-600">
+                  {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('th-TH', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: '2-digit' 
+                  }) : customer.date}
+                </p>
               </TableCell>
               <TableCell className="text-right">
                 <Button

@@ -6,15 +6,17 @@ interface CRMSidebarProps {
   onToggle: () => void;
   currentView: string;
   onViewChange: (view: string) => void;
-  userRole: 'admin' | 'user';
+  userRole: 'admin' | 'sales';
   onLogout: () => void;
 }
 
 export function CRMSidebar({ isCollapsed, onToggle, currentView, onViewChange, userRole, onLogout }: CRMSidebarProps) {
   const menuItems = [
     { id: 'dashboard', label: 'ภาพรวม', icon: LayoutDashboard },
-    { id: 'add-customer', label: 'เพิ่มลูกค้า', icon: UserPlus },
-    { id: 'my-customers', label: 'ลูกค้าของฉัน', icon: Users },
+    ...(userRole === 'sales' ? [
+      { id: 'add-customer', label: 'เพิ่มลูกค้า', icon: UserPlus },
+      { id: 'my-customers', label: 'ลูกค้าของฉัน', icon: Users },
+    ] : []),
     ...(userRole === 'admin' ? [
       { id: 'all-customers', label: 'ลูกค้าทั้งหมด', icon: UsersRound },
       { id: 'user-management', label: 'จัดการผู้ใช้งาน', icon: Settings }
