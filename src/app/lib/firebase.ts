@@ -1,21 +1,19 @@
-/*
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
 
 // TODO: Replace with your actual Firebase project configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyACbT43qw9rOLAe_-UEOyzrbwsFc-6YTNU",
+  authDomain: "catalogue21-92e8b.firebaseapp.com",
+  projectId: "catalogue21-92e8b",
+  storageBucket: "catalogue21-92e8b.firebasestorage.app",
+  messagingSenderId: "828111651708",
+  appId: "1:828111651708:web:7b5cf8622891ea9d989af9",
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-*/
 
 // Mock export to prevent build errors when commented
-export const db = null;
+// export const db = null;

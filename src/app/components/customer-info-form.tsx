@@ -19,11 +19,11 @@ interface CustomerInfoFormProps {
   initialData?: Partial<CustomerInfoData>;
   onSubmit: (data: CustomerInfoData) => void;
   onCancel?: () => void;
-  onCheckDuplicate?: (idCard: string, phoneNumbers: string[]) => { 
+  onCheckDuplicate?: (idCard: string, phoneNumbers: string[], taxId?: string) => Promise<{ 
     isDuplicate: boolean; 
     duplicateField: string | null;
     duplicateValue?: string;
-  };
+  }>;
 }
 
 export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDuplicate }: CustomerInfoFormProps) {
@@ -34,7 +34,7 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
     taxId: initialData?.taxId || '',
     status: initialData?.status || 'new',
   });
-  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+  const [duplicateErrors, setDuplicateErrors] = useState<{ idCard?: string; taxId?: string; phone?: string }>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -60,6 +60,10 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
       setErrors(newErrors);
       return;
     }
+
+    if (Object.keys(duplicateErrors).length > 0) {
+       return; // Block submit if duplicates exist
+    }
     
     // Filter out empty phone numbers before submitting
     const submissionData = {
@@ -75,6 +79,8 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
     const numericValue = value.replace(/\D/g, '').slice(0, 13);
     setFormData({ ...formData, idCard: numericValue });
     setErrors({ ...errors, idCard: '' });
+    // Clear duplicate error when typing
+    setDuplicateErrors(prev => ({ ...prev, idCard: undefined }));
   };
 
   const handlePhoneChange = (index: number, value: string) => {
@@ -82,7 +88,15 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
     newPhoneNumbers[index] = value;
     setFormData({ ...formData, phoneNumbers: newPhoneNumbers });
     setErrors({ ...errors, phoneNumbers: '' });
+     // Clear duplicate error when typing
+     setDuplicateErrors(prev => ({ ...prev, phone: undefined }));
   };
+
+  const handleTaxIdChange = (value: string) => {
+      setFormData({ ...formData, taxId: value });
+      // Clear duplicate error when typing
+      setDuplicateErrors(prev => ({ ...prev, taxId: undefined }));
+  }
 
   const addPhoneNumber = () => {
     setFormData({
@@ -98,33 +112,31 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
     }
   };
 
-  const checkForDuplicates = () => {
+  const checkForDuplicates = async () => {
     if (onCheckDuplicate) {
       const validPhones = formData.phoneNumbers.filter(p => p.trim());
-      const result = onCheckDuplicate(formData.idCard, validPhones);
+      // Don't check if fields are empty
+      if (!formData.idCard && validPhones.length === 0 && !formData.taxId) return;
+
+      const result = await onCheckDuplicate(formData.idCard, validPhones, formData.taxId);
+      
+      const newDupErrors: { idCard?: string; taxId?: string; phone?: string } = {};
+
       if (result.isDuplicate) {
-        setDuplicateWarning(
-          result.duplicateField === 'idCard'
-            ? `พบข้อมูลลูกค้าที่มีเลขบัตรประชาชน ${result.duplicateValue} ในระบบแล้ว`
-            : `พบข้อมูลลูกค้าที่มีเบอร์โทรศัพท์ ${result.duplicateValue} ในระบบแล้ว`
-        );
-      } else {
-        setDuplicateWarning(null);
+        if (result.duplicateField === 'idCard') {
+            newDupErrors.idCard = 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว';
+        } else if (result.duplicateField === 'phone') {
+            newDupErrors.phone = 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว';
+        } else if (result.duplicateField === 'taxId') {
+            newDupErrors.taxId = 'เลขผู้เสียภาษีนี้มีอยู่ในระบบแล้ว';
+        }
       }
+      setDuplicateErrors(newDupErrors);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {duplicateWarning && (
-        <Alert className="bg-orange-50 border-orange-200 rounded-xl">
-          <AlertTriangle className="h-4 w-4 text-orange-600" />
-          <AlertDescription className="text-orange-800">
-            {duplicateWarning} คุณยังสามารถบันทึกข้อมูลได้หากต้องการ
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* Customer Name Section */}
       <Card className="rounded-xl border border-slate-200">
         <CardContent className="pt-6">
@@ -168,11 +180,12 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
                 placeholder="X-XXXX-XXXXX-XX-X"
                 maxLength={13}
                 className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 font-mono ${
-                  errors.idCard ? 'border-red-500' : ''
+                  errors.idCard || duplicateErrors.idCard ? 'border-red-500' : ''
                 }`}
               />
               <p className="text-xs text-slate-500">กรอกเลขบัตรประชาชน 13 หลัก</p>
               {errors.idCard && <p className="text-sm text-red-500">{errors.idCard}</p>}
+              {duplicateErrors.idCard && <p className="text-sm text-red-500">{duplicateErrors.idCard}</p>}
             </div>
           </div>
 
@@ -183,11 +196,15 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
             <Input
               id="taxId"
               value={formData.taxId}
-              onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
+              onChange={(e) => handleTaxIdChange(e.target.value)}
+              onBlur={checkForDuplicates}
               placeholder="0000000000000"
-              className="rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 font-mono"
+              className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 font-mono ${
+                 duplicateErrors.taxId ? 'border-red-500' : ''
+              }`}
             />
             <p className="text-xs text-slate-500">ไม่บังคับ - สำหรับออกใบกำกับภาษี</p>
+            {duplicateErrors.taxId && <p className="text-sm text-red-500">{duplicateErrors.taxId}</p>}
           </div>
         </CardContent>
       </Card>
@@ -224,7 +241,7 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
                       onBlur={checkForDuplicates}
                       placeholder="08X-XXX-XXXX"
                       className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 pl-10 ${
-                        errors.phoneNumbers && index === 0 ? 'border-red-500' : ''
+                        (errors.phoneNumbers && index === 0) || duplicateErrors.phone ? 'border-red-500' : ''
                       }`}
                     />
                   </div>
@@ -243,6 +260,7 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
               ))}
             </div>
             {errors.phoneNumbers && <p className="text-sm text-red-500">{errors.phoneNumbers}</p>}
+            {duplicateErrors.phone && <p className="text-sm text-red-500">{duplicateErrors.phone}</p>}
           </div>
         </CardContent>
       </Card>
@@ -286,6 +304,7 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
         <Button
           type="submit"
           className="flex-1 h-11 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-xl shadow-lg"
+          disabled={Object.keys(duplicateErrors).length > 0}
         >
           บันทึกข้อมูล
         </Button>

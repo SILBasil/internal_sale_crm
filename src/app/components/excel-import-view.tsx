@@ -8,7 +8,7 @@ import { Customer } from '@/app/components/customer-table';
 
 interface ExcelImportViewProps {
   onImport: (customers: Omit<Customer, 'id' | 'date' | 'ownerId' | 'ownerName'>[]) => void;
-  onCheckDuplicate: (idCard: string, phoneNumbers: string[]) => { isDuplicate: boolean; duplicateField: string | null };
+  onCheckDuplicate: (idCard: string, phoneNumbers: string[]) => Promise<{ isDuplicate: boolean; duplicateField: string | null }>;
 }
 
 interface ValidatedRow extends ExcelCustomerData {
@@ -39,14 +39,14 @@ export function ExcelImportView({ onImport, onCheckDuplicate }: ExcelImportViewP
     setIsParsing(true);
     try {
       const rawData = await parseExcelFile(file);
-      const validatedData = rawData.map(row => {
+      const validatedData = await Promise.all(rawData.map(async row => {
         const errors = validateExcelRow(row);
         
         // Check duplicates
         const phoneNumbers = row['เบอร์โทรศัพท์'] 
           ? String(row['เบอร์โทรศัพท์']).split(',').map(p => p.trim()) 
           : [];
-        const duplicateCheck = onCheckDuplicate(String(row['เลขบัตรประชาชน'] || ''), phoneNumbers);
+        const duplicateCheck = await onCheckDuplicate(String(row['เลขบัตรประชาชน'] || ''), phoneNumbers);
 
         return {
           ...row,
@@ -54,7 +54,7 @@ export function ExcelImportView({ onImport, onCheckDuplicate }: ExcelImportViewP
           isDuplicate: duplicateCheck.isDuplicate,
           duplicateField: duplicateCheck.duplicateField
         };
-      });
+      }));
       setData(validatedData);
       toast.success('วิเคราะห์ไฟล์สำเร็จ', { description: `พบข้อมูลทั้งหมด ${validatedData.length} รายการ` });
     } catch (error) {
@@ -72,14 +72,14 @@ export function ExcelImportView({ onImport, onCheckDuplicate }: ExcelImportViewP
   };
 
   const handleImport = () => {
-    const errorCount = data.filter(row => row.errors.length > 0).length;
+    const errorCount = data.filter(row => row.errors.length > 0 || row.isDuplicate).length;
     if (errorCount > 0) {
-      toast.error('ไม่สามารถนำเข้าข้อมูลได้', { description: `มีข้อมูลที่ไม่ถูกต้อง ${errorCount} รายการ` });
+      toast.error('ไม่สามารถนำเข้าข้อมูลได้', { description: `มีข้อมูลที่ซ้ำหรือข้อมูลไม่ถูกต้อง ${errorCount} รายการ` });
       return;
     }
 
     const customers = data.map(row => ({
-      name: row['ชื่อลูกค้า/ชื่อร้าน'],
+      name: row['ชื่อลูกค้า/ชื่อร้าน'] || row['ชื่อลูกค้า'] || '',
       idCard: String(row['เลขบัตรประชาชน'] || ''),
       phoneNumbers: String(row['เบอร์โทรศัพท์']).split(',').map(p => p.trim()),
       taxId: String(row['เลขผู้เสียภาษี'] || ''),
@@ -151,7 +151,7 @@ export function ExcelImportView({ onImport, onCheckDuplicate }: ExcelImportViewP
                 <tbody className="divide-y divide-slate-100">
                   {data.map((row, idx) => (
                     <tr key={idx} className="bg-white hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-slate-900">{row['ชื่อลูกค้า/ชื่อร้าน']}</td>
+                      <td className="px-6 py-4 font-medium text-slate-900">{row['ชื่อลูกค้า/ชื่อร้าน'] || row['ชื่อลูกค้า']}</td>
                       <td className="px-6 py-4">
                         <div className="space-y-1">
                           {row.isDuplicate && (
@@ -191,7 +191,7 @@ export function ExcelImportView({ onImport, onCheckDuplicate }: ExcelImportViewP
             </Button>
             <Button 
               onClick={handleImport} 
-              disabled={data.some(row => row.errors.length > 0) || data.length === 0}
+              disabled={data.some(row => row.errors.length > 0 || row.isDuplicate) || data.length === 0}
               className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
             >
               <Upload className="h-4 w-4 mr-2" />

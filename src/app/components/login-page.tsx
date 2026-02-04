@@ -118,7 +118,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           </form>
           <div className="mt-6 text-center">
             <p className="text-xs text-slate-500">
-              Demo: admin@company.com / sales@company.com
+              ทดสอบ: admin@company.com / sales1@company.com
             </p>
           </div>
         </CardContent>
