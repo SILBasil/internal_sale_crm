@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "deploy": "npm run build && npx -p firebase-tools firebase deploy --only hosting"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -67,6 +68,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
+    "firebase-tools": "^15.5.1",
     "tailwindcss": "4.1.12",
     "vite": "6.3.5"
   },

@@ -116,11 +116,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               เข้าสู่ระบบ
             </Button>
           </form>
-          <div className="mt-6 text-center">
-            <p className="text-xs text-slate-500">
-              ทดสอบ: admin@company.com / sales1@company.com
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

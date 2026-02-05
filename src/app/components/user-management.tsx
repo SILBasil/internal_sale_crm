@@ -42,7 +42,7 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // For Add User form
   const [showEditPassword, setShowEditPassword] = useState(false); // For Edit User form
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -58,7 +58,7 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
       if (!updates.password || updates.password.trim() === '') {
         delete updates.password;
       }
-      
+
       onUpdateUser(editingUser.id, updates);
       setEditingUser(null);
       toast.success('อัปเดตข้อมูลผู้ใช้งานสำเร็จ');
@@ -98,7 +98,7 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
                 <Download className="h-4 w-4 mr-2" />
                 Template
               </Button>
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -109,13 +109,13 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
                 Import Excel
               </Button>
 
-              <UserImportDialog 
+              <UserImportDialog
                 isOpen={showImportDialog}
                 onClose={() => setShowImportDialog(false)}
                 existingEmails={users.map(u => u.email)}
                 onImport={handleImportSuccess}
               />
-              
+
               <Button
                 onClick={() => {
                   setIsAddUserOpen(true);
@@ -274,9 +274,9 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
                   </TableCell>
                   <TableCell className="text-slate-600">{user.createdDate}</TableCell>
                   <TableCell className="text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                       onClick={() => {
                         // Clear password field when opening edit modal to indicate "leave blank to keep"
@@ -295,88 +295,88 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
           </Table>
         </CardContent>
       </Card>
-      
+
       {/* Edit User Modal */}
       {editingUser && (
         <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>แก้ไขข้อมูลผู้ใช้งาน</DialogTitle>
-                    <DialogDescription>
-                      แก้ไขรายละเอียดผู้ใช้งาน หากต้องการเปลี่ยนรหัสผ่านให้กรอกช่องใหม่
-                    </DialogDescription>
-                </DialogHeader>
-                <form onSubmit={handleUpdate} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>ชื่อ</Label>
-                    <Input
-                      value={editingUser.name}
-                      onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>อีเมล</Label>
-                    <Input
-                      type="email"
-                      value={editingUser.email}
-                      onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>รหัสผ่าน (เว้นว่างหากไม่ต้องการเปลี่ยน)</Label>
-                    <div className="relative">
-                      <Input
-                        type={showEditPassword ? "text" : "password"}
-                        value={editingUser.password || ''}
-                        onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
-                        placeholder="ตั้งรหัสผ่านใหม่"
-                        className="pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowEditPassword(!showEditPassword)}
-                      >
-                        {showEditPassword ? (
-                          <EyeOff className="h-4 w-4 text-slate-500" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-slate-500" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>บทบาท</Label>
-                    <select
-                      value={editingUser.role}
-                      onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as 'admin' | 'sales' })}
-                      className="w-full h-10 rounded-lg border border-slate-300 px-3 outline-none"
-                    >
-                      <option value="sales">Sales</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>สถานะ</Label>
-                    <select
-                      value={editingUser.status}
-                      onChange={(e) => setEditingUser({ ...editingUser, status: e.target.value as 'active' | 'inactive' })}
-                      className="w-full h-10 rounded-lg border border-slate-300 px-3 outline-none"
-                    >
-                      <option value="active">ใช้งาน</option>
-                      <option value="inactive">ปิดการใช้งาน</option>
-                    </select>
-                  </div>
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>ยกเลิก</Button>
-                    <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700">บันทึกการแก้ไข</Button>
-                  </DialogFooter>
-                </form>
-            </DialogContent>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>แก้ไขข้อมูลผู้ใช้งาน</DialogTitle>
+              <DialogDescription>
+                แก้ไขรายละเอียดผู้ใช้งาน หากต้องการเปลี่ยนรหัสผ่านให้กรอกช่องใหม่
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div className="space-y-2">
+                <Label>ชื่อ</Label>
+                <Input
+                  value={editingUser.name}
+                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>อีเมล</Label>
+                <Input
+                  type="email"
+                  value={editingUser.email}
+                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>รหัสผ่าน (เว้นว่างหากไม่ต้องการเปลี่ยน)</Label>
+                <div className="relative">
+                  <Input
+                    type={showEditPassword ? "text" : "password"}
+                    value={editingUser.password || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, password: e.target.value })}
+                    placeholder="ตั้งรหัสผ่านใหม่"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                  >
+                    {showEditPassword ? (
+                      <EyeOff className="h-4 w-4 text-slate-500" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-slate-500" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>บทบาท</Label>
+                <select
+                  value={editingUser.role}
+                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as 'admin' | 'sales' })}
+                  className="w-full h-10 rounded-lg border border-slate-300 px-3 outline-none"
+                >
+                  <option value="sales">Sales</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>สถานะ</Label>
+                <select
+                  value={editingUser.status}
+                  onChange={(e) => setEditingUser({ ...editingUser, status: e.target.value as 'active' | 'inactive' })}
+                  className="w-full h-10 rounded-lg border border-slate-300 px-3 outline-none"
+                >
+                  <option value="active">ใช้งาน</option>
+                  <option value="inactive">ปิดการใช้งาน</option>
+                </select>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>ยกเลิก</Button>
+                <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700">บันทึกการแก้ไข</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
         </Dialog>
       )}
     </div>
