@@ -19,17 +19,17 @@ interface FilterBarProps {
   salesPersons?: { id: string; name: string }[];
 }
 
-export function FilterBar({ 
+export function FilterBar({
   searchTerm,
   searchStatus,
   searchSalesPerson,
   startDate,
   endDate,
-  onSearch, 
-  onStatusChange, 
-  onDateChange, 
+  onSearch,
+  onStatusChange,
+  onDateChange,
   onSalesPersonChange,
-  onExport, 
+  onExport,
   showExport = true,
   salesPersons
 }: FilterBarProps) {
@@ -46,7 +46,7 @@ export function FilterBar({
     <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6">
       <div className="flex flex-wrap gap-5 items-end">
         {/* Search */}
-        <div className="flex-1 min-w-[280px] space-y-1.5">
+        <div className="flex-1 min-w-full sm:min-w-[280px] space-y-1.5">
           <label className="text-xs font-semibold text-slate-500 ml-1">ค้นหาลูกค้า</label>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -126,16 +126,16 @@ export function FilterBar({
           <Button
             variant="ghost"
             onClick={handleClearFilters}
-            className="h-9 px-3 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all text-xs font-medium"
+            className="h-9 px-3 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all text-xs font-medium w-full sm:w-auto"
           >
             <X className="h-3.5 w-3.5 mr-1.5" />
             ล้างตัวกรอง
           </Button>
-          
+
           {showExport && (
             <Button
               onClick={onExport}
-              className="h-10 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white shadow-md shadow-green-100 transition-all font-medium px-6 flex-1 sm:flex-none justify-center"
+              className="h-10 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white shadow-md shadow-green-100 transition-all font-medium px-6 w-full sm:w-auto flex justify-center"
             >
               <Download className="h-4 w-4 mr-2" />
               Export Excel

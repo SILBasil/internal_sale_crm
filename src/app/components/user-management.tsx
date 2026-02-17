@@ -83,17 +83,17 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
       {/* Header Actions */}
       <Card className="rounded-xl border border-slate-200 shadow-lg">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle className="flex items-center gap-2 text-slate-900">
               <UserPlus className="h-5 w-5 text-[#2563eb]" />
               จัดการผู้ใช้งาน
             </CardTitle>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={generateUserTemplate}
-                className="rounded-lg h-9 border-slate-200 text-slate-600"
+                className="rounded-lg h-9 border-slate-200 text-slate-600 flex-1 sm:flex-none justify-center"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Template
@@ -103,7 +103,7 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
                 variant="outline"
                 size="sm"
                 onClick={() => setShowImportDialog(true)}
-                className="rounded-lg h-9 bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                className="rounded-lg h-9 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 flex-1 sm:flex-none justify-center"
               >
                 <FileSpreadsheet className="h-4 w-4 mr-2" />
                 Import Excel
@@ -121,7 +121,7 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
                   setIsAddUserOpen(true);
                   setShowPassword(false);
                 }}
-                className="h-9 bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg shadow-sm"
+                className="h-9 bg-[#2563eb] hover:bg-[#1d4ed8] rounded-lg shadow-sm flex-1 sm:flex-none justify-center w-full sm:w-auto"
               >
                 <UserPlus className="h-4 w-4 mr-2" />
                 เพิ่มผู้ใช้งาน

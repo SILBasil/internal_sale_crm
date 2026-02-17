@@ -7,11 +7,12 @@ interface EditCustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (customer: Customer) => void;
-  onCheckDuplicate?: (idCard: string, phoneNumbers: string[]) => { 
-    isDuplicate: boolean; 
+  onCheckDuplicate?: (idCard: string, phoneNumbers: string[], taxId?: string, excludeCustomerId?: string, ownerId?: string) => Promise<{
+    isDuplicate: boolean;
     duplicateField: string | null;
     duplicateValue?: string;
-  };
+    message?: string;
+  }>;
 }
 
 export function EditCustomerModal({ customer, isOpen, onClose, onSave, onCheckDuplicate }: EditCustomerModalProps) {
@@ -31,7 +32,7 @@ export function EditCustomerModal({ customer, isOpen, onClose, onSave, onCheckDu
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto rounded-2xl">
+      <DialogContent className="w-[95vw] sm:max-w-[700px] max-h-[90vh] overflow-y-auto rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl">แก้ไขข้อมูลลูกค้า</DialogTitle>
         </DialogHeader>
@@ -46,7 +47,11 @@ export function EditCustomerModal({ customer, isOpen, onClose, onSave, onCheckDu
             }}
             onSubmit={handleSubmit}
             onCancel={onClose}
-            onCheckDuplicate={onCheckDuplicate}
+            onCheckDuplicate={(idCard, phones, taxId) =>
+              onCheckDuplicate
+                ? onCheckDuplicate(idCard, phones, taxId, customer.id, customer.ownerId)
+                : Promise.resolve({ isDuplicate: false, duplicateField: null })
+            }
           />
         </div>
       </DialogContent>

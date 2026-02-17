@@ -4,7 +4,7 @@ import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
-import { AlertTriangle, Phone, Plus, X } from 'lucide-react';
+import { AlertTriangle, Phone, Plus, X, User } from 'lucide-react';
 import { Card, CardContent } from '@/app/components/ui/card';
 
 export interface CustomerInfoData {
@@ -13,64 +13,77 @@ export interface CustomerInfoData {
   phoneNumbers: string[];
   taxId: string;
   status: 'new' | 'active' | 'pending';
+  ownerId?: string; // Add ownerId for admin selection
 }
 
 interface CustomerInfoFormProps {
   initialData?: Partial<CustomerInfoData>;
   onSubmit: (data: CustomerInfoData) => void;
   onCancel?: () => void;
-  onCheckDuplicate?: (idCard: string, phoneNumbers: string[], taxId?: string) => Promise<{ 
-    isDuplicate: boolean; 
+  owners?: { id: string; name: string; email: string }[]; // List of sales persons for admin
+  onCheckDuplicate?: (idCard: string, phoneNumbers: string[], taxId?: string, ownerId?: string) => Promise<{
+    isDuplicate: boolean;
     duplicateField: string | null;
     duplicateValue?: string;
   }>;
 }
 
-export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDuplicate }: CustomerInfoFormProps) {
+export function CustomerInfoForm({ initialData, onSubmit, onCancel, owners, onCheckDuplicate }: CustomerInfoFormProps) {
   const [formData, setFormData] = useState<CustomerInfoData>({
     name: initialData?.name || '',
     idCard: initialData?.idCard || '',
     phoneNumbers: initialData?.phoneNumbers || [''],
     taxId: initialData?.taxId || '',
     status: initialData?.status || 'new',
+    ownerId: initialData?.ownerId || (owners && owners.length > 0 ? owners[0].id : undefined),
   });
   const [duplicateErrors, setDuplicateErrors] = useState<{ idCard?: string; taxId?: string; phone?: string }>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate form
     const newErrors: { [key: string]: string } = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = 'กรุณากรอกชื่อลูกค้าหรือชื่อร้าน';
     }
-    
+
     if (formData.idCard && formData.idCard.length !== 13) {
       newErrors.idCard = 'เลขบัตรประชาชนต้องมี 13 หลัก';
     }
-    
+
     const validPhones = formData.phoneNumbers.filter(p => p.trim());
     if (validPhones.length === 0) {
       newErrors.phoneNumbers = 'กรุณากรอกเบอร์โทรศัพท์อย่างน้อย 1 หมายเลข';
+    } else {
+      // Validation for phone format specifically to allow 02 (9 digits) and mobile (10 digits)
+      const invalidPhone = validPhones.find(p => !/^0[2-9][0-9]{7,8}$/.test(p.replace(/-/g, '')));
+      if (invalidPhone) {
+        newErrors.phoneNumbers = 'เบอร์โทรศัพท์ไม่ถูกต้อง (ต้องขึ้นต้นด้วย 0 และมี 9-10 หลัก)';
+      }
     }
-    
+
+    if (owners && !formData.ownerId) {
+      newErrors.ownerId = 'กรุณาเลือกผู้ดูแลลูกค้า (เซลล์)';
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
     if (Object.keys(duplicateErrors).length > 0) {
-       return; // Block submit if duplicates exist
+      return; // Block submit if duplicates exist
     }
-    
+
     // Filter out empty phone numbers before submitting
     const submissionData = {
       ...formData,
       phoneNumbers: validPhones,
     };
-    
+
     onSubmit(submissionData);
   };
 
@@ -84,18 +97,31 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
   };
 
   const handlePhoneChange = (index: number, value: string) => {
+    // Basic filtering to allow typing dashes but clean for state
+    // Just keep as is for flexible input, validate on submit or blur
     const newPhoneNumbers = [...formData.phoneNumbers];
     newPhoneNumbers[index] = value;
     setFormData({ ...formData, phoneNumbers: newPhoneNumbers });
     setErrors({ ...errors, phoneNumbers: '' });
-     // Clear duplicate error when typing
-     setDuplicateErrors(prev => ({ ...prev, phone: undefined }));
+    // Clear duplicate error when typing
+    setDuplicateErrors(prev => ({ ...prev, phone: undefined }));
   };
 
   const handleTaxIdChange = (value: string) => {
-      setFormData({ ...formData, taxId: value });
-      // Clear duplicate error when typing
-      setDuplicateErrors(prev => ({ ...prev, taxId: undefined }));
+    setFormData({ ...formData, taxId: value });
+    // Clear duplicate error when typing
+    setDuplicateErrors(prev => ({ ...prev, taxId: undefined }));
+  }
+
+  const handleOwnerChange = (value: string) => {
+    setFormData({ ...formData, ownerId: value });
+    setErrors({ ...errors, ownerId: '' });
+    // Re-check duplicates because Tax ID is unique per owner
+    // We trigger this manually or let blur handle it, but changing owner affects uniqueness context
+    // Implementing explicit re-check for Tax ID if present
+    if (formData.taxId) {
+      checkForDuplicates(value);
+    }
   }
 
   const addPhoneNumber = () => {
@@ -112,23 +138,28 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
     }
   };
 
-  const checkForDuplicates = async () => {
+  const checkForDuplicates = async (overrideOwnerId?: string) => {
     if (onCheckDuplicate) {
       const validPhones = formData.phoneNumbers.filter(p => p.trim());
       // Don't check if fields are empty
       if (!formData.idCard && validPhones.length === 0 && !formData.taxId) return;
 
-      const result = await onCheckDuplicate(formData.idCard, validPhones, formData.taxId);
-      
+      // Use current ownerId or override
+      const ownerToCheck = overrideOwnerId || formData.ownerId;
+
+      const result = await onCheckDuplicate(formData.idCard, validPhones, formData.taxId, ownerToCheck);
+
       const newDupErrors: { idCard?: string; taxId?: string; phone?: string } = {};
 
       if (result.isDuplicate) {
         if (result.duplicateField === 'idCard') {
-            newDupErrors.idCard = 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว';
+          newDupErrors.idCard = 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว';
         } else if (result.duplicateField === 'phone') {
-            newDupErrors.phone = 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว';
+          newDupErrors.phone = 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว';
         } else if (result.duplicateField === 'taxId') {
-            newDupErrors.taxId = 'เลขผู้เสียภาษีนี้มีอยู่ในระบบแล้ว';
+          // Clarify specific owner context
+          const ownerName = owners?.find(o => o.id === ownerToCheck)?.name;
+          newDupErrors.taxId = `เลขผู้เสียภาษีนี้มีอยู่ในระบบแล้ว (ของ ${ownerName || 'คุณ'})`;
         }
       }
       setDuplicateErrors(newDupErrors);
@@ -137,6 +168,35 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Sales Person Selection (Admin Only) */}
+      {owners && owners.length > 0 && (
+        <Card className="rounded-xl border border-blue-200 bg-blue-50/50">
+          <CardContent className="pt-6">
+            <div className="space-y-2">
+              <Label htmlFor="ownerId" className="text-blue-900 flex items-center gap-2">
+                <User className="h-4 w-4" />
+                ผู้ดูแลลูกค้า (เซลล์) <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.ownerId}
+                onValueChange={handleOwnerChange}
+              >
+                <SelectTrigger className="rounded-lg border-blue-200 bg-white focus:ring-2 focus:ring-blue-500 h-11">
+                  <SelectValue placeholder="เลือกเซลล์ผู้ดูแล" />
+                </SelectTrigger>
+                <SelectContent>
+                  {owners.map(owner => (
+                    <SelectItem key={owner.id} value={owner.id}>
+                      {owner.name} ({owner.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.ownerId && <p className="text-sm text-red-500">{errors.ownerId}</p>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {/* Customer Name Section */}
       <Card className="rounded-xl border border-slate-200">
         <CardContent className="pt-6">
@@ -152,9 +212,8 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
                 setErrors({ ...errors, name: '' });
               }}
               placeholder="กรอกชื่อลูกค้าหรือชื่อร้าน"
-              className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 ${
-                errors.name ? 'border-red-500' : ''
-              }`}
+              className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 ${errors.name ? 'border-red-500' : ''
+                }`}
             />
             {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
           </div>
@@ -166,7 +225,7 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
         <CardContent className="pt-6 space-y-4">
           <div>
             <h3 className="text-sm font-medium text-slate-700 mb-4">ข้อมูลระบุตัวตน</h3>
-            
+
             <div className="space-y-2">
               <Label htmlFor="idCard" className="text-slate-700">
                 เลขบัตรประชาชนเจ้าของร้าน
@@ -179,9 +238,8 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
                 onBlur={checkForDuplicates}
                 placeholder="X-XXXX-XXXXX-XX-X"
                 maxLength={13}
-                className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 font-mono ${
-                  errors.idCard || duplicateErrors.idCard ? 'border-red-500' : ''
-                }`}
+                className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 font-mono ${errors.idCard || duplicateErrors.idCard ? 'border-red-500' : ''
+                  }`}
               />
               <p className="text-xs text-slate-500">กรอกเลขบัตรประชาชน 13 หลัก</p>
               {errors.idCard && <p className="text-sm text-red-500">{errors.idCard}</p>}
@@ -199,9 +257,8 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
               onChange={(e) => handleTaxIdChange(e.target.value)}
               onBlur={checkForDuplicates}
               placeholder="0000000000000"
-              className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 font-mono ${
-                 duplicateErrors.taxId ? 'border-red-500' : ''
-              }`}
+              className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 font-mono ${duplicateErrors.taxId ? 'border-red-500' : ''
+                }`}
             />
             <p className="text-xs text-slate-500">ไม่บังคับ - สำหรับออกใบกำกับภาษี</p>
             {duplicateErrors.taxId && <p className="text-sm text-red-500">{duplicateErrors.taxId}</p>}
@@ -240,9 +297,8 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, onCheckDupli
                       onChange={(e) => handlePhoneChange(index, e.target.value)}
                       onBlur={checkForDuplicates}
                       placeholder="08X-XXX-XXXX"
-                      className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 pl-10 ${
-                        (errors.phoneNumbers && index === 0) || duplicateErrors.phone ? 'border-red-500' : ''
-                      }`}
+                      className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 pl-10 ${(errors.phoneNumbers && index === 0) || duplicateErrors.phone ? 'border-red-500' : ''
+                        }`}
                     />
                   </div>
                   {formData.phoneNumbers.length > 1 && (

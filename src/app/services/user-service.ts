@@ -49,10 +49,14 @@ export const userService = {
   async getUsers() {
     try {
       const querySnapshot = await getDocs(collection(db, "users"));
-      return querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as UserData[];
+      return querySnapshot.docs.map((doc) => {
+        const data = doc.data() as any;
+        delete data.password; // Security: Don't send password to client
+        return {
+          id: doc.id,
+          ...data,
+        };
+      }) as UserData[];
     } catch (e) {
       console.error("Error fetching users: ", e);
       throw e;
@@ -86,9 +90,12 @@ export const userService = {
       if (snapshot.empty) return null;
 
       const doc = snapshot.docs[0];
+      const data = doc.data() as any;
+      delete data.password; // Security: Don't send password back
+
       return {
         id: doc.id,
-        ...doc.data(),
+        ...data,
       } as UserData;
     } catch (e) {
       console.error("Login verification failed:", e);

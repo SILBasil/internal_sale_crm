@@ -8,7 +8,8 @@ export interface ExcelCustomerData {
   "เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์"?: string;
   เลขผู้เสียภาษี?: string; // KEEP old key for backward compat or if mapping fails
   สถานะ: string;
-  [key: string]: string | undefined;
+  อีเมลผู้ดูแล?: string; // Optional for Admin usage
+  [key: string]: any;
 }
 
 export interface ExcelUserData {
@@ -25,15 +26,19 @@ export const EXCEL_HEADERS = [
   "เบอร์โทรศัพท์",
   "เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์",
   "สถานะ",
+  "อีเมลผู้ดูแล",
 ];
 export const USER_EXCEL_HEADERS = [
   "ชื่อ-นามสกุล",
   "อีเมล",
   "รหัสผ่าน",
   "บทบาท",
+  "อีเมลผู้ดูแล",
 ];
 
-export const generateTemplate = () => {
+export const generateTemplate = (
+  owners?: { name: string; email: string }[],
+) => {
   const ws = XLSX.utils.aoa_to_sheet([EXCEL_HEADERS]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Customers");
@@ -43,12 +48,25 @@ export const generateTemplate = () => {
     [
       "บริษัท ตัวอย่าง จำกัด",
       "1234567890123",
-      "0812345678, 0891234567",
+      "0812345678, 021234567",
       "0123456789012",
       "active",
+      "sales@company.com",
     ],
   ];
   XLSX.utils.sheet_add_aoa(ws, exampleData, { origin: -1 });
+
+  // Add Salespersons Reference Sheet (for Admin)
+  if (owners && owners.length > 0) {
+    const referenceHeaders = [
+      "ชื่อผู้ดูแล (Copy ช่องนี้ไป)",
+      "อีเมล (Copy ช่องนี้ไปใช้ใน col F)",
+    ];
+    const referenceData = owners.map((o) => [o.name, o.email]);
+
+    const wsRef = XLSX.utils.aoa_to_sheet([referenceHeaders, ...referenceData]);
+    XLSX.utils.book_append_sheet(wb, wsRef, "รายชื่อผู้ดูแล (Reference)");
+  }
 
   XLSX.writeFile(wb, "customer_template.xlsx");
 };
@@ -165,6 +183,20 @@ export const validateExcelRow = (row: ExcelCustomerData) => {
 
   if (!row["เบอร์โทรศัพท์"]) {
     errors.push("ขาดเบอร์โทรศัพท์");
+  } else {
+    // Validate phone number format (basic check for length)
+    // Allow multiple comma-separated
+    const phones = String(row["เบอร์โทรศัพท์"])
+      .split(",")
+      .map((p) => p.trim());
+    const invalidPhone = phones.find(
+      (p) => !/^0[2-9][0-9]{7,8}$/.test(p.replace(/-/g, "")),
+    );
+    if (invalidPhone) {
+      errors.push(
+        `เบอร์โทรศัพท์ไม่ถูกต้อง (${invalidPhone}) ต้องมี 9-10 หลักและขึ้นต้นด้วย 0`,
+      );
+    }
   }
 
   const validStatuses = ["new", "active", "pending"];
@@ -173,4 +205,53 @@ export const validateExcelRow = (row: ExcelCustomerData) => {
   }
 
   return errors;
+};
+
+export const generateErrorReport = (
+  invalidRows: any[],
+  owners?: { name: string; email: string }[],
+) => {
+  const ws = XLSX.utils.json_to_sheet(
+    invalidRows.map((row) => {
+      // Construct a row with original data + error column
+      const errorRow: any = { ...row };
+
+      // Remove internal processing fields
+      delete errorRow.errors;
+      delete errorRow.isDuplicate;
+      delete errorRow.duplicateField;
+      delete errorRow.targetOwnerId;
+      delete errorRow.targetOwnerName;
+
+      // Add Error Reason
+      const errorReasons = [
+        ...(row.errors || []),
+        row.isDuplicate ? `ข้อมูลซ้ำ (${row.duplicateField})` : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      return {
+        ...errorRow,
+        สาเหตุข้อผิดพลาด: errorReasons,
+      };
+    }),
+  );
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Errors");
+
+  // Add Salespersons Reference Sheet (for Admin - same as template)
+  if (owners && owners.length > 0) {
+    const referenceHeaders = [
+      "ชื่อผู้ดูแล (Copy ช่องนี้ไป)",
+      "อีเมล (Copy ช่องนี้ไปใช้ใน col F)",
+    ];
+    const referenceData = owners.map((o) => [o.name, o.email]);
+
+    const wsRef = XLSX.utils.aoa_to_sheet([referenceHeaders, ...referenceData]);
+    XLSX.utils.book_append_sheet(wb, wsRef, "รายชื่อผู้ดูแล (Reference)");
+  }
+
+  XLSX.writeFile(wb, "import_errors.xlsx");
 };

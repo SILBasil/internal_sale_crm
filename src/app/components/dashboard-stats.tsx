@@ -1,18 +1,23 @@
 import { Users, CheckCircle, Target } from 'lucide-react';
 import { Card, CardContent } from '@/app/components/ui/card';
 import { Progress } from '@/app/components/ui/progress';
+import { Button } from '@/app/components/ui/button';
 
 interface DashboardStatsProps {
-  totalCustomers: number;
-  salesBreakdown?: { name: string; count: number }[];
+  stats: {
+    total: number;
+    breakdown?: { name: string; count: number }[];
+  };
+  isLoading?: boolean;
+  userRole?: 'admin' | 'sales';
 }
 
-export function DashboardStats({ totalCustomers, salesBreakdown }: DashboardStatsProps) {
-  const stats = [
+export function DashboardStats({ stats, isLoading, userRole }: DashboardStatsProps) {
+  const statCards = [
     {
       id: 1,
-      title: 'ลูกค้าทั้งหมด',
-      value: totalCustomers.toLocaleString(),
+      title: userRole === 'admin' ? 'ลูกค้าทั้งหมดในระบบ' : 'ลูกค้าทั้งหมดของคุณ',
+      value: stats.total.toLocaleString(),
       icon: Users,
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',
@@ -22,8 +27,8 @@ export function DashboardStats({ totalCustomers, salesBreakdown }: DashboardStat
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
             <Card key={stat.id} className={`border ${stat.borderColor} shadow-sm rounded-2xl overflow-hidden hover:shadow-md transition-shadow bg-white`}>
@@ -43,7 +48,7 @@ export function DashboardStats({ totalCustomers, salesBreakdown }: DashboardStat
         })}
       </div>
 
-      {salesBreakdown && (
+      {stats.breakdown && stats.breakdown.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
@@ -51,8 +56,8 @@ export function DashboardStats({ totalCustomers, salesBreakdown }: DashboardStat
               จำนวนลูกค้าของเซลล์แต่ละคน
             </h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {salesBreakdown.map((sales, index) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {stats.breakdown.map((sales, index) => (
               <div key={index} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-blue-200 transition-all group">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-tighter mb-1">{sales.name}</p>
                 <div className="flex items-baseline gap-1">
@@ -72,7 +77,7 @@ export function DashboardStats({ totalCustomers, salesBreakdown }: DashboardStat
 export function DashboardSkeleton() {
   return (
     <div className="space-y-8 animate-pulse">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1].map((i) => (
           <div key={i} className="border border-slate-100 shadow-sm rounded-2xl p-6 bg-white h-[116px]">
             <div className="flex items-center gap-5 h-full">
