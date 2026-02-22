@@ -14,12 +14,9 @@ import { exportToExcel } from '@/app/utils/excel-utils';
 import { customerService, CustomerQueryOptions } from '@/app/services/customer-service';
 import { userService } from '@/app/services/user-service';
 import { DocumentSnapshot } from 'firebase/firestore';
-import { migrateDataToFirestore, checkMigrationStatus } from '@/app/utils/migration-utils';
+import { LoadingSpinner } from '@/app/components/ui/loading-spinner';
 import { toast } from 'sonner';
 import { Toaster } from '@/app/components/ui/sonner';
-import { Button } from '@/app/components/ui/button';
-import { startUserMigration } from '@/app/utils/user-migration';
-import { LoadingSpinner } from '@/app/components/ui/loading-spinner';
 import { ConfirmDialog } from '@/app/components/ui/confirm-dialog';
 
 
@@ -56,7 +53,6 @@ export default function App() {
   const [totalCount, setTotalCount] = useState(0);
   const [pageCursors, setPageCursors] = useState<Map<number, DocumentSnapshot>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
-  const [needsMigration, setNeedsMigration] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
 
   // Dashboard State
@@ -101,41 +97,7 @@ export default function App() {
 
   const [customers, setCustomers] = useState<Customer[]>([]);
 
-  // Run user migration once
-  useEffect(() => {
-    startUserMigration();
-  }, []);
 
-  // Check if customer migration is needed
-  useEffect(() => {
-    const checkStatus = async () => {
-      if (currentUser?.role === 'admin') {
-        const isEmpty = !(await checkMigrationStatus());
-        setNeedsMigration(isEmpty);
-      }
-    };
-    checkStatus();
-  }, [currentUser]);
-
-  const handleMigrate = async () => {
-    setIsMigrating(true);
-    try {
-      await migrateDataToFirestore();
-      toast.success('ย้ายข้อมูลสำเร็จ!', {
-        description: 'ข้อมูลจาก mock_data.json ถูกอัปโหลดขึ้น Firestore แล้ว',
-      });
-      setNeedsMigration(false);
-      // Trigger refresh
-      setSearchTerm(prev => prev + ' ');
-      setSearchTerm(prev => prev.trim());
-    } catch (error) {
-      toast.error('การย้ายข้อมูลล้มเหลว', {
-        description: 'กรุณาเช็ค Console สำหรับรายละเอียด',
-      });
-    } finally {
-      setIsMigrating(false);
-    }
-  };
 
   const handleExport = async () => {
     try {
@@ -431,7 +393,13 @@ export default function App() {
       toast.success('เพิ่มลูกค้าสำเร็จ', {
         description: `เพิ่มลูกค้า ${data.name} ให้กับ ${targetOwnerName} เรียบร้อยแล้ว`,
       });
-      setCurrentView('my-customers');
+
+      // Smart redirection: If Admin adds for someone else, go to All Customers
+      if (currentUser.role === 'admin' && targetOwnerId !== currentUser.id) {
+        setCurrentView('all-customers');
+      } else {
+        setCurrentView('my-customers');
+      }
     } catch (e) {
       toast.error('เกิดข้อผิดพลาดในการเพิ่มลูกค้า');
     }
@@ -742,18 +710,6 @@ export default function App() {
         <main className="flex-1 overflow-y-auto p-8">
           {currentView === 'dashboard' && (
             <div>
-              {needsMigration && currentUser?.role === 'admin' && (
-                <div className="mb-8 p-6 bg-blue-50 border-2 border-dashed border-blue-200 rounded-2xl flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-blue-900">ระบบตรวจพบว่า Firestore ยังไม่มีข้อมูล</h3>
-                    <p className="text-blue-700">ต้องการนำเข้าข้อมูลจาก mock_data.json หรือไม่? (ใช้เวลาประมาณ 10-30 วินาที)</p>
-                  </div>
-                  <Button onClick={handleMigrate} disabled={isMigrating}>
-                    {isMigrating ? 'กำลังย้ายข้อมูล...' : '📥 ย้ายข้อมูลเข้า Firestore'}
-                  </Button>
-                </div>
-              )}
-
               {isDashboardLoading ? (
                 <div className="flex flex-col items-center justify-center min-h-[400px]">
                   <LoadingSpinner size={40} />
@@ -819,7 +775,7 @@ export default function App() {
                 ) : (
                   <ExcelImportView
                     onImport={handleBulkAddCustomers}
-                    onCheckDuplicate={handleCheckDuplicate}
+                    onCheckDuplicate={(id, phones, tax, ownerId) => handleCheckDuplicate(id, phones, tax, undefined, ownerId || currentUser.id)}
                     owners={currentUser.role === 'admin' ? systemUsers.filter(u => u.role === 'sales').map(u => ({ id: u.id, name: u.name, email: u.email })) : undefined}
                   />
                 )}
@@ -914,16 +870,17 @@ export default function App() {
             )
           )}
         </main>
-      </div>
+      </div >
 
       {/* Edit Customer Modal */}
-      <EditCustomerModal
+      < EditCustomerModal
         customer={editingCustomer}
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
           setEditingCustomer(null);
-        }}
+        }
+        }
         onSave={handleSaveCustomer}
         onCheckDuplicate={handleCheckDuplicate}
       />
@@ -938,6 +895,6 @@ export default function App() {
         cancelText="ยกเลิก"
         variant="destructive"
       />
-    </div>
+    </div >
   );
 }

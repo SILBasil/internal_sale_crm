@@ -7,7 +7,7 @@ interface CRMHeaderProps {
   title: string;
   userEmail: string;
   userName: string;
-  userRole: 'admin' | 'user';
+  userRole: 'admin' | 'sales';
   onMenuClick: () => void;
 }
 

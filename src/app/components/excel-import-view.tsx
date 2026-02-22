@@ -45,7 +45,13 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
     setInvalidRows([]);
     try {
       const rawData = await parseExcelFile(file);
-      const validatedData = await Promise.all(rawData.map(async row => {
+      // Tracking duplicates WITHIN the file/session
+      const seenPhones = new Set<string>();
+      const seenTaxIds = new Map<string, string>(); // taxId -> ownerId
+
+      const validatedData: ValidatedRow[] = [];
+
+      for (const row of rawData) {
         const errors = validateExcelRow(row);
 
         let targetOwnerId: string | undefined;
@@ -68,22 +74,52 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
           }
         }
 
-        // Check duplicates
         const phoneNumbers = row['เบอร์โทรศัพท์']
-          ? String(row['เบอร์โทรศัพท์']).split(',').map(p => p.trim())
+          ? String(row['เบอร์โทรศัพท์']).split(',').map(p => p.trim().replace(/[-\s]/g, ""))
           : [];
 
-        const duplicateCheck = await onCheckDuplicate(String(row['เลขบัตรประชาชน'] || ''), phoneNumbers, String(row['เลขผู้เสียภาษี'] || ''), targetOwnerId);
+        const idCard = row['เลขบัตรประชาชน'] ? String(row['เลขบัตรประชาชน']) : '';
+        const taxId = row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี'] ? String(row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี']) : '';
 
-        return {
+        // Check duplicates in database
+        const duplicateCheck = await onCheckDuplicate(idCard, phoneNumbers, taxId, targetOwnerId);
+
+        // Prepare initial result
+        const rowResult: ValidatedRow = {
           ...row,
           errors,
           isDuplicate: duplicateCheck.isDuplicate,
           duplicateField: duplicateCheck.duplicateField,
           targetOwnerId,
-          targetOwnerName
+          targetOwnerName,
         };
-      }));
+
+        // If not already a DB duplicate, check WITHIN the file
+        if (!rowResult.isDuplicate) {
+          // Check Internal Phone Duplicates
+          for (const phone of phoneNumbers) {
+            if (seenPhones.has(phone)) {
+              rowResult.isDuplicate = true;
+              rowResult.duplicateField = "phone (ในไฟล์)";
+              break;
+            }
+            seenPhones.add(phone);
+          }
+
+          // Check Internal Tax ID Duplicates (Within same owner)
+          if (!rowResult.isDuplicate && taxId) {
+            const ownerKey = targetOwnerId || "myself";
+            const taxKey = `${taxId}_${ownerKey}`;
+            if (seenTaxIds.has(taxKey)) {
+              rowResult.isDuplicate = true;
+              rowResult.duplicateField = "taxId (ในไฟล์)";
+            }
+            seenTaxIds.set(taxKey, ownerKey);
+          }
+        }
+
+        validatedData.push(rowResult);
+      }
 
       const valid = validatedData.filter(r => r.errors.length === 0 && !r.isDuplicate);
       const invalid = validatedData.filter(r => r.errors.length > 0 || r.isDuplicate);
@@ -115,15 +151,20 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
   const handleImportValid = () => {
     if (validRows.length === 0) return;
 
-    const customers = validRows.map(row => ({
-      name: row['ชื่อลูกค้า/ชื่อร้าน'] || row['ชื่อลูกค้า'] || '',
-      idCard: String(row['เลขบัตรประชาชน'] || ''),
-      phoneNumbers: String(row['เบอร์โทรศัพท์']).split(',').map(p => p.trim()),
-      taxId: String(row['เลขผู้เสียภาษี'] || ''),
-      status: (row['สถานะ']?.toLowerCase() || 'new') as 'new' | 'active' | 'pending',
-      ownerId: row.targetOwnerId,
-      ownerName: row.targetOwnerName
-    }));
+    const customers = validRows.map(row => {
+      const idCard = row['เลขบัตรประชาชน'] ? String(row['เลขบัตรประชาชน']) : '';
+      const taxId = row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี'] ? String(row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี']) : '';
+
+      return {
+        name: row['ชื่อลูกค้า/ชื่อร้าน'] || row['ชื่อลูกค้า'] || '',
+        idCard: idCard,
+        phoneNumbers: String(row['เบอร์โทรศัพท์']).split(',').map(p => p.trim()),
+        taxId: taxId,
+        status: (row['สถานะ']?.toLowerCase() || 'new') as 'new' | 'active' | 'pending',
+        ownerId: row.targetOwnerId,
+        ownerName: row.targetOwnerName
+      };
+    });
 
     const hasErrors = invalidRows.length > 0;
     onImport(customers, hasErrors);

@@ -190,11 +190,12 @@ export const validateExcelRow = (row: ExcelCustomerData) => {
       .split(",")
       .map((p) => p.trim());
     const invalidPhone = phones.find(
-      (p) => !/^0[2-9][0-9]{7,8}$/.test(p.replace(/-/g, "")),
+      (p) =>
+        !/^(0[2-57][0-9]{7}|0[689][0-9]{8})$/.test(p.replace(/[-\s]/g, "")),
     );
     if (invalidPhone) {
       errors.push(
-        `เบอร์โทรศัพท์ไม่ถูกต้อง (${invalidPhone}) ต้องมี 9-10 หลักและขึ้นต้นด้วย 0`,
+        `เบอร์โทรศัพท์ไม่ถูกต้อง (${invalidPhone}) เบอร์มือถือต้องมี 10 หลัก, เบอร์บ้านต้องมี 9 หลัก`,
       );
     }
   }

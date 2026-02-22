@@ -25,6 +25,7 @@ interface CustomerInfoFormProps {
     isDuplicate: boolean;
     duplicateField: string | null;
     duplicateValue?: string;
+    message?: string;
   }>;
 }
 
@@ -38,6 +39,7 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, owners, onCh
     ownerId: initialData?.ownerId || (owners && owners.length > 0 ? owners[0].id : undefined),
   });
   const [duplicateErrors, setDuplicateErrors] = useState<{ idCard?: string; taxId?: string; phone?: string }>({});
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -140,29 +142,49 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, owners, onCh
 
   const checkForDuplicates = async (overrideOwnerId?: string) => {
     if (onCheckDuplicate) {
-      const validPhones = formData.phoneNumbers.filter(p => p.trim());
+      const validPhones = formData.phoneNumbers
+        .map(p => p.trim().replace(/[-\s]/g, ""))
+        .filter(p => p.length > 0);
+
+      // Basic format check before calling backend
+      const invalidFormat = validPhones.find(p => !/^(0[2-57][0-9]{7}|0[689][0-9]{8})$/.test(p));
+      if (invalidFormat) {
+        setDuplicateErrors({ phone: 'เบอร์มือถือต้องมี 10 หลัก, เบอร์บ้านต้องมี 9 หลัก' });
+        return;
+      }
+
       // Don't check if fields are empty
-      if (!formData.idCard && validPhones.length === 0 && !formData.taxId) return;
+      if (!formData.idCard && validPhones.length === 0 && !formData.taxId) {
+        setDuplicateErrors({});
+        return;
+      }
 
       // Use current ownerId or override
-      const ownerToCheck = overrideOwnerId || formData.ownerId;
+      const ownerToCheck = overrideOwnerId && typeof overrideOwnerId === 'string' ? overrideOwnerId : formData.ownerId;
 
-      const result = await onCheckDuplicate(formData.idCard, validPhones, formData.taxId, ownerToCheck);
+      setIsCheckingDuplicate(true);
+      try {
+        const result = await onCheckDuplicate(formData.idCard, validPhones, formData.taxId, ownerToCheck);
 
-      const newDupErrors: { idCard?: string; taxId?: string; phone?: string } = {};
+        const newDupErrors: { idCard?: string; taxId?: string; phone?: string } = {};
 
-      if (result.isDuplicate) {
-        if (result.duplicateField === 'idCard') {
-          newDupErrors.idCard = 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว';
-        } else if (result.duplicateField === 'phone') {
-          newDupErrors.phone = 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว';
-        } else if (result.duplicateField === 'taxId') {
-          // Clarify specific owner context
-          const ownerName = owners?.find(o => o.id === ownerToCheck)?.name;
-          newDupErrors.taxId = `เลขผู้เสียภาษีนี้มีอยู่ในระบบแล้ว (ของ ${ownerName || 'คุณ'})`;
+        if (result.isDuplicate) {
+          if (result.duplicateField === 'idCard') {
+            newDupErrors.idCard = 'เลขบัตรประชาชนนี้มีอยู่ในระบบแล้ว';
+          } else if (result.duplicateField === 'phone') {
+            newDupErrors.phone = result.message || 'เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว';
+          } else if (result.duplicateField === 'taxId') {
+            // Clarify specific owner context
+            const ownerName = owners?.find(o => o.id === ownerToCheck)?.name;
+            newDupErrors.taxId = result.message || `เลขผู้เสียภาษีนี้มีอยู่ในระบบแล้ว (ของ ${ownerName || 'คุณ'})`;
+          }
         }
+        setDuplicateErrors(newDupErrors);
+      } catch (error) {
+        console.error("Duplicate check failed:", error);
+      } finally {
+        setIsCheckingDuplicate(false);
       }
-      setDuplicateErrors(newDupErrors);
     }
   };
 
@@ -235,7 +257,7 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, owners, onCh
                 type="text"
                 value={formData.idCard}
                 onChange={(e) => handleIdCardChange(e.target.value)}
-                onBlur={checkForDuplicates}
+                onBlur={() => checkForDuplicates()}
                 placeholder="X-XXXX-XXXXX-XX-X"
                 maxLength={13}
                 className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 font-mono ${errors.idCard || duplicateErrors.idCard ? 'border-red-500' : ''
@@ -255,7 +277,7 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, owners, onCh
               id="taxId"
               value={formData.taxId}
               onChange={(e) => handleTaxIdChange(e.target.value)}
-              onBlur={checkForDuplicates}
+              onBlur={() => checkForDuplicates()}
               placeholder="0000000000000"
               className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 font-mono ${duplicateErrors.taxId ? 'border-red-500' : ''
                 }`}
@@ -295,7 +317,7 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, owners, onCh
                       type="tel"
                       value={phone}
                       onChange={(e) => handlePhoneChange(index, e.target.value)}
-                      onBlur={checkForDuplicates}
+                      onBlur={() => checkForDuplicates()}
                       placeholder="08X-XXX-XXXX"
                       className={`rounded-lg border-slate-300 focus:ring-2 focus:ring-[#2563eb] focus:border-[#2563eb] h-11 pl-10 ${(errors.phoneNumbers && index === 0) || duplicateErrors.phone ? 'border-red-500' : ''
                         }`}
@@ -359,10 +381,17 @@ export function CustomerInfoForm({ initialData, onSubmit, onCancel, owners, onCh
         )}
         <Button
           type="submit"
-          className="flex-1 h-11 bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-xl shadow-lg"
-          disabled={Object.keys(duplicateErrors).length > 0}
+          className={`flex-1 h-11 ${isCheckingDuplicate ? 'bg-slate-400' : 'bg-[#2563eb] hover:bg-[#1d4ed8]'} text-white rounded-xl shadow-lg transition-colors`}
+          disabled={Object.keys(duplicateErrors).length > 0 || isCheckingDuplicate}
         >
-          บันทึกข้อมูล
+          {isCheckingDuplicate ? (
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              กำลังตรวจสอบข้อมูล...
+            </div>
+          ) : (
+            'บันทึกข้อมูล'
+          )}
         </Button>
       </div>
     </form>
