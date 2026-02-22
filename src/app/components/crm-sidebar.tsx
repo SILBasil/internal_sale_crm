@@ -47,8 +47,11 @@ export function CRMSidebar({ isCollapsed, onToggle, currentView, onViewChange, u
         `}
       >
         {/* Header */}
-        <div className="p-6 flex items-center justify-between border-b border-slate-700">
-          {(!isCollapsed || isMobileOpen) && <h2 className="text-xl font-semibold">CRM System</h2>}
+        <div className="p-6 flex items-center gap-3 border-b border-slate-700">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
+            <img src="/favicon.svg" alt="CRM" className="w-6 h-6 brightness-0 invert" />
+          </div>
+          {(!isCollapsed || isMobileOpen) && <h2 className="text-xl font-bold tracking-tight">Sales CRM</h2>}
 
           {/* Desktop Toggle */}
           <Button

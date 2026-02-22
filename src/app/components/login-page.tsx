@@ -146,8 +146,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               >
                 <ArrowLeft className="w-6 h-6" />
               </button>
-              <div className="mx-auto w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-3 backdrop-blur-sm">
-                <Shield className="w-6 h-6 text-white" />
+              <div className="mx-auto w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-3 backdrop-blur-sm border border-white/10">
+                <img src="/favicon.svg" alt="CRM Logo" className="w-10 h-10 brightness-0 invert" />
               </div>
               <CardTitle className="text-xl font-bold">ข้อมูลผู้ใช้งานใหม่</CardTitle>
               <p className="text-blue-100 text-xs mt-1">กรอกข้อมูลและเพิ่มลงรายการด้านขวา</p>
@@ -308,8 +308,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       <div className="w-full max-w-md space-y-4">
         <Card className="rounded-2xl shadow-2xl border border-slate-200">
           <CardHeader className="space-y-1 text-center pb-6">
-            <div className="mx-auto w-16 h-16 bg-[#2563eb] rounded-2xl flex items-center justify-center mb-4 text-white">
-              <User className="w-8 h-8" />
+            <div className="mx-auto w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 border border-blue-100 shadow-inner group transition-transform hover:scale-105">
+              <img src="/favicon.svg" alt="CRM Logo" className="w-16 h-16 drop-shadow-sm" />
             </div>
             <CardTitle className="text-2xl text-slate-900 font-bold">Sales CRM System</CardTitle>
             <p className="text-sm text-slate-500">เข้าสู่ระบบเพื่อจัดการลูกค้า</p>
