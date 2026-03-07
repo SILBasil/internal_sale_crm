@@ -11,17 +11,32 @@ import {
   increment,
   writeBatch,
   getCountFromServer,
+  deleteDoc,
 } from "firebase/firestore";
 import { UserData } from "@/app/components/user-management";
+
+// Helper to clean object of undefined values to prevent Firestore errors
+const cleanObject = (obj: any): any => {
+  const result: any = {};
+  Object.keys(obj).forEach((key) => {
+    if (obj[key] !== undefined) {
+      result[key] = obj[key];
+    }
+  });
+  return result;
+};
 
 export const userService = {
   // Add a new user
   async addUser(user: Omit<UserData, "id">) {
     try {
-      const docRef = await addDoc(collection(db, "users"), {
-        ...user,
-        createdAt: Timestamp.now(),
-      });
+      const docRef = await addDoc(
+        collection(db, "users"),
+        cleanObject({
+          ...user,
+          createdAt: Timestamp.now(),
+        }),
+      );
       return docRef.id;
     } catch (e) {
       console.error("Error adding user: ", e);
@@ -33,10 +48,13 @@ export const userService = {
   async bulkAddUsers(users: Omit<UserData, "id">[]) {
     try {
       const promises = users.map((user) =>
-        addDoc(collection(db, "users"), {
-          ...user,
-          createdAt: Timestamp.now(),
-        }),
+        addDoc(
+          collection(db, "users"),
+          cleanObject({
+            ...user,
+            createdAt: Timestamp.now(),
+          }),
+        ),
       );
       await Promise.all(promises);
     } catch (e) {
@@ -67,10 +85,13 @@ export const userService = {
   async updateUser(id: string, updates: Partial<UserData>) {
     try {
       const userRef = doc(db, "users", id);
-      await updateDoc(userRef, {
-        ...updates,
-        updatedAt: Timestamp.now(),
-      });
+      await updateDoc(
+        userRef,
+        cleanObject({
+          ...updates,
+          updatedAt: Timestamp.now(),
+        }),
+      );
     } catch (e) {
       console.error("Error updating user: ", e);
       throw e;
@@ -144,6 +165,50 @@ export const userService = {
     } catch (e) {
       console.error("Error syncing counts:", e);
       throw e;
+    }
+  },
+
+  // Deactivate a user (set status to inactive)
+  async deactivateUser(userId: string) {
+    try {
+      const userRef = doc(db, "users", userId);
+      await updateDoc(userRef, {
+        status: "inactive",
+        updatedAt: Timestamp.now(),
+      });
+    } catch (e) {
+      console.error("Error deactivating user:", e);
+      throw e;
+    }
+  },
+
+  // Delete a user completely
+  async deleteUser(userId: string) {
+    try {
+      const userRef = doc(db, "users", userId);
+      await deleteDoc(userRef);
+    } catch (e) {
+      console.error("Error deleting user:", e);
+      throw e;
+    }
+  },
+
+  // Get user by email
+  async getUserByEmail(email: string) {
+    try {
+      const q = query(collection(db, "users"), where("email", "==", email));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) return null;
+
+      const doc = snapshot.docs[0];
+      return {
+        id: doc.id,
+        ...doc.data(),
+      } as UserData;
+    } catch (e) {
+      console.error("Error fetching user by email:", e);
+      return null;
     }
   },
 };

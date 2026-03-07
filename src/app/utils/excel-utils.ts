@@ -9,6 +9,7 @@ export interface ExcelCustomerData {
   เลขผู้เสียภาษี?: string; // KEEP old key for backward compat or if mapping fails
   สถานะ: string;
   อีเมลผู้ดูแล?: string; // Optional for Admin usage
+  เมลล์เซลล์ใหม่?: string; // For reassignment
   [key: string]: any;
 }
 
@@ -28,6 +29,16 @@ export const EXCEL_HEADERS = [
   "สถานะ",
   "อีเมลผู้ดูแล",
 ];
+
+export const UNASSIGNED_EXCEL_HEADERS = [
+  "หมายเลขระบบ",
+  "ชื่อลูกค้า/ชื่อร้าน",
+  "เลขบัตรประชาชน",
+  "เบอร์โทรศัพท์",
+  "เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์",
+  "สถานะ",
+  "เมลล์เซลล์ใหม่",
+];
 export const USER_EXCEL_HEADERS = [
   "ชื่อ-นามสกุล",
   "อีเมล",
@@ -39,7 +50,16 @@ export const USER_EXCEL_HEADERS = [
 export const generateTemplate = (
   owners?: { name: string; email: string }[],
 ) => {
-  const ws = XLSX.utils.aoa_to_sheet([EXCEL_HEADERS]);
+  const isAdmin = owners && owners.length > 0;
+  const adminEmailHeader = "อีเมลผู้ดูแล";
+  const emailIndex = EXCEL_HEADERS.indexOf(adminEmailHeader);
+
+  let headers = [...EXCEL_HEADERS];
+  if (!isAdmin && emailIndex !== -1) {
+    headers.splice(emailIndex, 1);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet([headers]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Customers");
 
@@ -49,11 +69,27 @@ export const generateTemplate = (
       "บริษัท ตัวอย่าง จำกัด",
       "1234567890123",
       "0812345678, 021234567",
-      "0123456789012",
+      "0123456789012, 9876543210987, 5555555555555",
       "active",
       "sales@company.com",
     ],
-  ];
+    [
+      "ร้านค้า ตัวอย่าง 2",
+      "9876543210987",
+      "0898765432",
+      "1111111111111, 2222222222222",
+      "new",
+      "sales2@company.com",
+    ],
+  ].map((row) => {
+    if (!isAdmin && emailIndex !== -1) {
+      const newRow = [...row];
+      newRow.splice(emailIndex, 1);
+      return newRow;
+    }
+    return row;
+  });
+
   XLSX.utils.sheet_add_aoa(ws, exampleData, { origin: -1 });
 
   // Add Salespersons Reference Sheet (for Admin)
@@ -255,4 +291,41 @@ export const generateErrorReport = (
   }
 
   XLSX.writeFile(wb, "import_errors.xlsx");
+};
+// Export unassigned customers for reassignment
+export const exportUnassignedCustomers = (
+  customers: any[],
+  owners?: { name: string; email: string }[],
+) => {
+  const ws = XLSX.utils.aoa_to_sheet([UNASSIGNED_EXCEL_HEADERS]);
+
+  // Map customers to Excel format
+  const customerData = customers.map((c) => [
+    c.id || "",
+    c.name || "",
+    c.idCard || "",
+    (c.phoneNumbers || []).join(", ") || "",
+    (c.taxIds || []).join(", ") || "",
+    c.status || "active",
+    "", // Empty column for new owner email
+  ]);
+
+  XLSX.utils.sheet_add_aoa(ws, customerData, { origin: -1 });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "UnassignedCustomers");
+
+  // Add Salespersons Reference Sheet
+  if (owners && owners.length > 0) {
+    const referenceHeaders = [
+      "ชื่อผู้ดูแล",
+      "เมลล์ (Copy ไปใส่คอลัมน์ 'เมลล์เซลล์ใหม่')",
+    ];
+    const referenceData = owners.map((o) => [o.name, o.email]);
+
+    const wsRef = XLSX.utils.aoa_to_sheet([referenceHeaders, ...referenceData]);
+    XLSX.utils.book_append_sheet(wb, wsRef, "รายชื่อผู้ดูแล");
+  }
+
+  XLSX.writeFile(wb, "unassigned_customers.xlsx");
 };

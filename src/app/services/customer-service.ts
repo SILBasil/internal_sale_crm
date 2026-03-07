@@ -56,8 +56,8 @@ const generateSearchKeywords = (customer: Partial<Customer>): string[] => {
     }
   }
 
-  // ID Card & Tax ID (Prefixes are usually enough for search)
-  [customer.idCard, customer.taxId].forEach((id) => {
+  // ID Card & Tax IDs (Prefixes are usually enough for search)
+  [customer.idCard, ...(customer.taxIds || [])].forEach((id) => {
     if (id) {
       const cleanId = id.replace(/\D/g, "");
       for (let i = 1; i <= cleanId.length; i++) {
@@ -79,21 +79,58 @@ const generateSearchKeywords = (customer: Partial<Customer>): string[] => {
   return Array.from(keywords);
 };
 
+// Helper to clean object of undefined values to prevent Firestore errors
+const cleanObject = (obj: any): any => {
+  const result: any = {};
+  Object.keys(obj).forEach((key) => {
+    if (obj[key] !== undefined) {
+      result[key] = obj[key];
+    }
+  });
+  return result;
+};
+
 export const customerService = {
   // Add a new customer
   async addCustomer(customer: Omit<Customer, "id">) {
     try {
-      const keywords = generateSearchKeywords(customer);
-      const docRef = await addDoc(collection(db, "customers"), {
-        ...customer,
-        name_lowercase: customer.name.toLowerCase(),
-        phoneNumbers_clean: customer.phoneNumbers.map((p) =>
-          p.replace(/\D/g, ""),
+      const cleanPhones = Array.from(
+        new Set(
+          customer.phoneNumbers
+            .map((p) => p.replace(/\D/g, ""))
+            .filter((p) => p.length > 0),
         ),
-        search_keywords: keywords,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
+      );
+
+      const cleanTaxIds = customer.taxIds
+        ? Array.from(
+            new Set(
+              customer.taxIds
+                .map((t) => t.replace(/\D/g, ""))
+                .filter((t) => t.length > 0),
+            ),
+          )
+        : [];
+
+      const keywords = generateSearchKeywords({
+        ...customer,
+        phoneNumbers: cleanPhones,
+        taxIds: cleanTaxIds,
       });
+
+      const docRef = await addDoc(
+        collection(db, "customers"),
+        cleanObject({
+          ...customer,
+          phoneNumbers: cleanPhones,
+          taxIds: cleanTaxIds,
+          name_lowercase: customer.name.toLowerCase(),
+          phoneNumbers_clean: cleanPhones,
+          search_keywords: keywords,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        }),
+      );
 
       // Increment user's customer count
       if (customer.ownerId) {
@@ -269,8 +306,23 @@ export const customerService = {
       };
 
       if (updates.phoneNumbers) {
-        finalUpdates.phoneNumbers_clean = updates.phoneNumbers.map((p) =>
-          p.replace(/\D/g, ""),
+        finalUpdates.phoneNumbers = Array.from(
+          new Set(
+            updates.phoneNumbers
+              .map((p) => p.replace(/\D/g, ""))
+              .filter((p) => p.length > 0),
+          ),
+        );
+        finalUpdates.phoneNumbers_clean = finalUpdates.phoneNumbers;
+      }
+
+      if (updates.taxIds) {
+        finalUpdates.taxIds = Array.from(
+          new Set(
+            updates.taxIds
+              .map((t) => t.replace(/\D/g, ""))
+              .filter((t) => t.length > 0),
+          ),
         );
       }
 
@@ -278,24 +330,23 @@ export const customerService = {
         updates.name ||
         updates.phoneNumbers ||
         updates.idCard ||
-        updates.taxId ||
+        updates.taxIds ||
         updates.ownerId
       ) {
+        if (updates.name) {
+          finalUpdates.name_lowercase = updates.name.toLowerCase();
+        }
         const currentDoc = await getDocs(
           query(collection(db, "customers"), where(documentId(), "==", id)),
         );
         if (!currentDoc.empty) {
           const currentData = currentDoc.docs[0].data() as Customer;
-          const mergedData = { ...currentData, ...updates };
+          const mergedData = { ...currentData, ...finalUpdates }; // Use finalUpdates here
           finalUpdates.search_keywords = generateSearchKeywords(mergedData);
-        }
-
-        if (updates.name) {
-          finalUpdates.name_lowercase = updates.name.toLowerCase();
         }
       }
 
-      await updateDoc(customerRef, finalUpdates);
+      await updateDoc(customerRef, cleanObject(finalUpdates));
     } catch (e) {
       console.error("Error updating document: ", e);
       throw e;
@@ -319,7 +370,7 @@ export const customerService = {
 
   // Bulk add customers (for Excel import)
   async bulkAddCustomers(
-    customers: Omit<Customer, "id">[],
+    customers: (Omit<Customer, "id"> & { id?: string })[],
     onProgress?: (processed: number, total: number) => void,
   ) {
     const BATCH_SIZE = 100; // Reduced from 500 to stay under 10MB limit
@@ -333,24 +384,59 @@ export const customerService = {
         const ownerCounts: Record<string, number> = {};
 
         chunk.forEach((customer) => {
-          const docRef = doc(collection(db, "customers"));
-          const keywords = generateSearchKeywords(customer);
+          // If customer has an ID, use it (Upsert/Update logic)
+          // Otherwise, create a new document
+          const { id, ...dataToSave } = customer;
+          const docRef = id
+            ? doc(db, "customers", id)
+            : doc(collection(db, "customers"));
 
-          batch.set(docRef, {
-            ...customer,
-            name_lowercase: customer.name.toLowerCase(),
-            phoneNumbers_clean: customer.phoneNumbers.map((p) =>
-              p.replace(/\D/g, ""),
+          const cleanPhones = Array.from(
+            new Set(
+              customer.phoneNumbers
+                .map((p) => p.replace(/\D/g, ""))
+                .filter((p) => p.length > 0),
             ),
-            search_keywords: keywords,
-            createdAt: Timestamp.now(),
-            updatedAt: Timestamp.now(),
+          );
+
+          const cleanTaxIds = Array.from(
+            new Set(
+              (customer.taxIds || [])
+                .map((t) => t.replace(/\D/g, ""))
+                .filter((t) => t.length > 0),
+            ),
+          );
+
+          const keywords = generateSearchKeywords({
+            ...customer,
+            phoneNumbers: cleanPhones,
+            taxIds: cleanTaxIds,
           });
 
+          const customerData = {
+            ...dataToSave,
+            phoneNumbers: cleanPhones,
+            taxIds: cleanTaxIds,
+            name_lowercase: customer.name.toLowerCase(),
+            phoneNumbers_clean: cleanPhones,
+            search_keywords: keywords,
+            updatedAt: Timestamp.now(),
+          };
+
+          batch.set(
+            docRef,
+            cleanObject({
+              ...customerData,
+              // Only set createdAt if it doesn't have an ID (New document)
+              ...(!id ? { createdAt: Timestamp.now() } : {}),
+            }),
+            { merge: true },
+          );
+
           // Track counts per owner
-          if (customer.ownerId) {
-            ownerCounts[customer.ownerId] =
-              (ownerCounts[customer.ownerId] || 0) + 1;
+          if (dataToSave.ownerId) {
+            ownerCounts[dataToSave.ownerId] =
+              (ownerCounts[dataToSave.ownerId] || 0) + 1;
           }
         });
 
@@ -378,38 +464,54 @@ export const customerService = {
   async checkDuplicate(
     idCard: string,
     phoneNumbers: string[],
-    taxId?: string,
+    taxIds?: string[],
     excludeCustomerId?: string,
     ownerId?: string,
   ) {
     try {
-      const isDuplicateFound = async (q: Query) => {
+      const findDuplicate = async (q: Query) => {
         const snapshot = await getDocs(query(q, limit(5)));
-        if (snapshot.empty) return false;
-        // If no excludeId, any match is a duplicate
-        if (!excludeCustomerId) return true;
-        // If excludeId exists, check if any found doc has a different ID
-        return snapshot.docs.some((doc) => doc.id !== excludeCustomerId);
+        if (snapshot.empty) return null;
+        // If no excludeId, first match is a duplicate
+        if (!excludeCustomerId) return snapshot.docs[0];
+        // If excludeId exists, find first doc with different ID
+        return (
+          snapshot.docs.find((doc) => doc.id !== excludeCustomerId) || null
+        );
       };
 
       // Check ID Card - ALLOW DUPLICATES as per requirement
       // "เลขบัตรประชาชนซ้ำได้เพราะจะมีกรณีที่ลูกค้ามีบริษัทหลายที่ได้"
       // We do NOT return duplicate error for ID Card anymore.
 
-      // Check Tax ID - Unique PER SALESPERSON
-      if (taxId && ownerId) {
-        const taxQuery = query(
-          collection(db, "customers"),
-          where("taxId", "==", taxId),
-          where("ownerId", "==", ownerId), // Scope to owner
-        );
-        if (await isDuplicateFound(taxQuery)) {
-          return {
-            isDuplicate: true,
-            duplicateField: "taxId",
-            message:
-              "เลขผู้เสียภาษีนี้มีอยู่ในระบบแล้ว (ซ้ำในรายชื่อลูกค้าของคุณ)",
-          };
+      // Check Tax IDs - GLOBAL UNIQUE (Updated as per user request to detect duplicates with others)
+      if (taxIds && taxIds.length > 0) {
+        for (const taxId of taxIds) {
+          if (!taxId.trim()) continue; // Skip empty values
+
+          const taxQuery = query(
+            collection(db, "customers"),
+            where("taxIds", "array-contains", taxId.trim()),
+          );
+          const dupDoc = await findDuplicate(taxQuery);
+          if (dupDoc) {
+            const data = dupDoc.data() as any;
+            const isSelf = ownerId && data.ownerId === ownerId;
+
+            return {
+              isDuplicate: true,
+              duplicateField: "taxId",
+              message: isSelf
+                ? `เลขผู้เสียภาษี "${taxId}" มีอยู่ในระบบแล้ว (ซ้ำในรายชื่อลูกค้าของคุณ)`
+                : `เลขผู้เสียภาษี "${taxId}" มีอยู่ในระบบแล้ว (ซ้ำกับของคนอื่น)`,
+              existingCustomer: {
+                id: dupDoc.id,
+                ownerId: data.ownerId,
+                ownerName: data.ownerName,
+                name: data.name,
+              },
+            };
+          }
         }
       }
 
@@ -418,7 +520,7 @@ export const customerService = {
         // Clean phone numbers before checking
         const cleanPhones = phoneNumbers
           .map((p) => p.replace(/\D/g, ""))
-          .filter((p) => p.length > 0)
+          .filter((p) => p.length >= 9 && p.length <= 10) // Min 9, Max 10
           .slice(0, 10);
 
         if (cleanPhones.length > 0) {
@@ -426,11 +528,19 @@ export const customerService = {
             collection(db, "customers"),
             where("phoneNumbers_clean", "array-contains-any", cleanPhones),
           );
-          if (await isDuplicateFound(phoneQuery)) {
+          const dupDoc = await findDuplicate(phoneQuery);
+          if (dupDoc) {
+            const data = dupDoc.data() as any;
             return {
               isDuplicate: true,
               duplicateField: "phone",
               message: "เบอร์โทรศัพท์นี้มีอยู่ในระบบแล้ว (ห้ามซ้ำกับคนอื่น)",
+              existingCustomer: {
+                id: dupDoc.id,
+                ownerId: data.ownerId,
+                ownerName: data.ownerName,
+                name: data.name,
+              },
             };
           }
         }
@@ -440,6 +550,39 @@ export const customerService = {
     } catch (e) {
       console.error("Error checking duplicate:", e);
       return { isDuplicate: false, duplicateField: null };
+    }
+  },
+
+  // Get owner info by ID Card
+  async getOwnerByIdCard(idCard: string) {
+    try {
+      if (!idCard || idCard.length !== 13) return null;
+
+      const snapshot = await getDocs(
+        query(
+          collection(db, "customers"),
+          where("idCard", "==", idCard),
+          limit(1),
+        ),
+      );
+
+      if (snapshot.empty) return null;
+
+      const customer = snapshot.docs[0].data() as any;
+      // Return owner information and customer names
+      return {
+        ownerId: customer.ownerId,
+        ownerName: customer.ownerName || "ไม่ระบุชื่อเจ้าของ",
+        foundCustomers: [
+          {
+            name: customer.name,
+            ownerId: customer.ownerId,
+          },
+        ],
+      };
+    } catch (e) {
+      console.error("Error getting owner by ID card:", e);
+      return null;
     }
   },
 
@@ -482,7 +625,7 @@ export const customerService = {
 
         if (unassignedCount !== 0) {
           salesStats.push({
-            name: "อื่นๆ / ยังไม่ระบุเจ้าของ",
+            name: "ไม่มีเซลล์",
             count: unassignedCount,
           });
         }
@@ -506,7 +649,8 @@ export const customerService = {
     try {
       const snapshot = await getDocs(collection(db, "customers"));
       const batch = writeBatch(db);
-      let count = 0;
+      let count = 0; // Tracks updates from 'needsUpdate'
+      let fixedCount = 0; // Tracks specific fixes like ownerName for null ownerId
 
       for (const docSnap of snapshot.docs) {
         const data = docSnap.data() as Customer;
@@ -519,19 +663,42 @@ export const customerService = {
           needsUpdate = true;
         }
 
+        // Case 2: ownerId is null but ownerName is STILL PRESENT
+        if (!data.ownerId && data.ownerName) {
+          updates.ownerName = null;
+          needsUpdate = true;
+          fixedCount++;
+        }
+
+        // Case 3: Both are present, verify ownerName matches current user name
+        // (This part is not in the provided diff, keeping original logic if any)
+
         // 2. Normalize Phones
+        let currentCleanPhones = data.phoneNumbers_clean || [];
         if (data.phoneNumbers) {
-          const cleanPhones = data.phoneNumbers
+          const newCleanPhones = data.phoneNumbers
             .map((p) => p.replace(/\D/g, ""))
             .filter((p) => p.length > 0);
 
           if (
-            JSON.stringify(cleanPhones) !==
+            JSON.stringify(newCleanPhones) !==
             JSON.stringify(data.phoneNumbers_clean)
           ) {
-            updates.phoneNumbers_clean = cleanPhones;
+            updates.phoneNumbers_clean = newCleanPhones;
+            currentCleanPhones = newCleanPhones;
             needsUpdate = true;
           }
+        }
+
+        // 3. Refresh Search Keywords
+        const mergedData = { ...data, ...updates };
+        const searchKeywords = generateSearchKeywords(mergedData);
+        if (
+          JSON.stringify(searchKeywords) !==
+          JSON.stringify(data.search_keywords)
+        ) {
+          updates.search_keywords = searchKeywords;
+          needsUpdate = true;
         }
 
         if (needsUpdate) {
@@ -540,12 +707,143 @@ export const customerService = {
         }
       }
 
-      if (count > 0) {
+      if (count > 0 || fixedCount > 0) {
         await batch.commit();
       }
-      return count;
+      return { customerCount: snapshot.size, fixedCount: count + fixedCount };
     } catch (e) {
       console.error("Error cleaning up data: ", e);
+      throw e;
+    }
+  },
+
+  // Set all customers of a user to have no owner (null)
+  async releaseCustomersByUser(userId: string) {
+    try {
+      const q = query(
+        collection(db, "customers"),
+        where("ownerId", "==", userId),
+      );
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) return 0;
+
+      const batch = writeBatch(db);
+      let count = 0;
+
+      snapshot.docs.forEach((doc) => {
+        batch.update(doc.ref, {
+          ownerId: null,
+          ownerName: null,
+        });
+        count++;
+      });
+
+      await batch.commit();
+      return count;
+    } catch (e) {
+      console.error("Error releasing customers:", e);
+      throw e;
+    }
+  },
+
+  // Get all customers with null owner
+  async getUnassignedCustomers(
+    options?: Omit<CustomerQueryOptions, "ownerId">,
+  ) {
+    try {
+      const {
+        searchTerm,
+        status,
+        pageSize = 50,
+        lastVisible,
+        startDate,
+        endDate,
+      } = options || {};
+
+      let q = query(collection(db, "customers"), where("ownerId", "==", null));
+
+      if (status && status !== "all") {
+        q = query(q, where("status", "==", status));
+      }
+
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        q = query(q, where("search_keywords", "array-contains", term));
+      }
+
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
+        q = query(
+          q,
+          where("createdAt", ">=", Timestamp.fromDate(start)),
+          where("createdAt", "<=", Timestamp.fromDate(end)),
+        );
+      }
+
+      q = query(q, orderBy("createdAt", "desc"));
+
+      if (lastVisible) {
+        q = query(q, startAfter(lastVisible));
+      }
+
+      q = query(q, limit(pageSize));
+
+      const snapshot = await getDocs(q);
+      const customers = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Customer[];
+
+      return {
+        customers,
+        lastVisible: snapshot.docs[snapshot.docs.length - 1],
+      };
+    } catch (e) {
+      console.error("Error fetching unassigned customers:", e);
+      throw e;
+    }
+  },
+
+  // Update customer owner
+  async updateCustomerOwner(customerId: string, newOwnerId: string | null) {
+    try {
+      const customerRef = doc(db, "customers", customerId);
+      await updateDoc(customerRef, {
+        ownerId: newOwnerId,
+        updatedAt: Timestamp.now(),
+      });
+    } catch (e) {
+      console.error("Error updating customer owner:", e);
+      throw e;
+    }
+  },
+
+  // Bulk update customer owners (for import)
+  async bulkUpdateCustomerOwners(
+    updates: { customerId: string; newOwnerId: string }[],
+  ) {
+    try {
+      const batch = writeBatch(db);
+      let count = 0;
+
+      for (const update of updates) {
+        const customerRef = doc(db, "customers", update.customerId);
+        batch.update(customerRef, {
+          ownerId: update.newOwnerId,
+          updatedAt: Timestamp.now(),
+        });
+        count++;
+      }
+
+      await batch.commit();
+      return count;
+    } catch (e) {
+      console.error("Error bulk updating customer owners:", e);
       throw e;
     }
   },

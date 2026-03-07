@@ -1,26 +1,33 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent } from '@/app/components/ui/card';
-import { FileSpreadsheet, Download, Upload, AlertCircle, CheckCircle2, Trash2, FileWarning } from 'lucide-react';
+import { FileSpreadsheet, Download, Upload, AlertCircle, CheckCircle2, Trash2, FileWarning, Loader2 } from 'lucide-react';
 import { generateTemplate, parseExcelFile, validateExcelRow, ExcelCustomerData, generateErrorReport } from '@/app/utils/excel-utils';
 import { toast } from 'sonner';
 import { Customer } from '@/app/components/customer-table';
 
 interface ExcelImportViewProps {
-  onImport: (customers: Omit<Customer, 'id' | 'date' | 'ownerId' | 'ownerName'>[], hasErrors: boolean) => void;
-  onCheckDuplicate: (idCard: string, phoneNumbers: string[], taxId?: string, ownerId?: string) => Promise<{ isDuplicate: boolean; duplicateField: string | null }>;
+  onImport: (customers: any[], hasErrors: boolean) => void;
+  onCheckDuplicate: (idCard: string, phoneNumbers: string[], taxIds?: string[], excludeCustomerId?: string, ownerId?: string) => Promise<{
+    isDuplicate: boolean;
+    duplicateField: string | null;
+    existingCustomer?: { id: string; ownerId: string | null; ownerName: string | null; name: string }
+  }>;
   owners?: { id: string; name: string; email: string }[]; // List of sales persons for admin
+  userRole: 'admin' | 'sales';
 }
 
 interface ValidatedRow extends ExcelCustomerData {
   errors: string[];
   isDuplicate: boolean;
+  isUpsert?: boolean;
   duplicateField: string | null;
   targetOwnerId?: string;
   targetOwnerName?: string;
+  existingCustomerId?: string;
 }
 
-export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImportViewProps) {
+export function ExcelImportView({ onImport, onCheckDuplicate, owners, userRole }: ExcelImportViewProps) {
   const [file, setFile] = useState<File | null>(null);
   const [validRows, setValidRows] = useState<ValidatedRow[]>([]);
   const [invalidRows, setInvalidRows] = useState<ValidatedRow[]>([]);
@@ -59,15 +66,16 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
 
         // Admin Mode: Check for owner email in Excel if owners list is provided
         if (owners && owners.length > 0) {
-          // Support both new simple header and old long header
-          const ownerEmail = row['อีเมลผู้ดูแล'] || row['อีเมลผู้ดูแล (สำหรับ Admin)'];
+          // Support multiple owner email columns for reassignment scenario
+          const ownerEmail = row['เมลล์เซลล์ใหม่'] || row['อีเมลผู้ดูแล'] || row['อีเมลผู้ดูแล (สำหรับ Admin)'];
           if (ownerEmail) {
-            const owner = owners.find(o => o.email.trim().toLowerCase() === ownerEmail.trim().toLowerCase());
+            const activeOwners = (owners || []).filter((o: any) => !o.status || o.status === 'active');
+            const owner = activeOwners.find(o => o.email.trim().toLowerCase() === ownerEmail.trim().toLowerCase());
             if (owner) {
               targetOwnerId = owner.id;
               targetOwnerName = owner.name;
             } else {
-              errors.push(`ไม่พบอีเมลผู้ดูแล: ${ownerEmail}`);
+              errors.push(`ไม่พบอีเมลผู้ดูแลที่กำลังใช้งานอยู่: ${ownerEmail}`);
             }
           } else {
             errors.push('กรุณาระบุอีเมลผู้ดูแล (สำหรับ Admin)');
@@ -79,10 +87,14 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
           : [];
 
         const idCard = row['เลขบัตรประชาชน'] ? String(row['เลขบัตรประชาชน']) : '';
-        const taxId = row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี'] ? String(row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี']) : '';
+
+        // Parse tax IDs from comma-separated values (like phone numbers)
+        const taxIds = row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี']
+          ? String(row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี']).split(',').map(t => t.trim()).filter(t => t)
+          : [];
 
         // Check duplicates in database
-        const duplicateCheck = await onCheckDuplicate(idCard, phoneNumbers, taxId, targetOwnerId);
+        const duplicateCheck = await onCheckDuplicate(idCard, phoneNumbers, taxIds, undefined, targetOwnerId);
 
         // Prepare initial result
         const rowResult: ValidatedRow = {
@@ -94,8 +106,33 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
           targetOwnerName,
         };
 
+        // Explicit ID mapping: If row has "หมายเลขระบบ" or "ID", treat it as an update
+        const systemId = row['หมายเลขระบบ'] || row['ID'] || row['id'];
+        if (systemId) {
+          if (userRole === 'admin') {
+            rowResult.isUpsert = true;
+            rowResult.existingCustomerId = String(systemId).trim();
+            rowResult.isDuplicate = false; // Trust the explicit ID
+            rowResult.duplicateField = "อัปเดตข้อมูล (ตาม ID)";
+          } else {
+            errors.push('คุณไม่มีสิทธิ์อัปเดตข้อมูลผ่าน Excel (กรุณาแก้ไขผ่านหน้าเว็บ)');
+            rowResult.isUpsert = false;
+          }
+        }
+
+        // Reassignment logic: If duplicate is found by phone/idCard but has no owner, allow Admin to reassign
+        if (!rowResult.isUpsert && rowResult.isDuplicate && duplicateCheck.existingCustomer && owners && owners.length > 0) {
+          const existing = duplicateCheck.existingCustomer;
+          if (!existing.ownerId) {
+            rowResult.isDuplicate = false; // Not a hard error anymore
+            rowResult.isUpsert = true;
+            rowResult.existingCustomerId = existing.id;
+            rowResult.duplicateField = "อัปเดตเจ้าของ (เดิมว่าง)";
+          }
+        }
+
         // If not already a DB duplicate, check WITHIN the file
-        if (!rowResult.isDuplicate) {
+        if (!rowResult.isDuplicate && !rowResult.isUpsert) {
           // Check Internal Phone Duplicates
           for (const phone of phoneNumbers) {
             if (seenPhones.has(phone)) {
@@ -107,14 +144,18 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
           }
 
           // Check Internal Tax ID Duplicates (Within same owner)
-          if (!rowResult.isDuplicate && taxId) {
+          if (!rowResult.isDuplicate && !rowResult.isUpsert && taxIds.length > 0) {
             const ownerKey = targetOwnerId || "myself";
-            const taxKey = `${taxId}_${ownerKey}`;
-            if (seenTaxIds.has(taxKey)) {
-              rowResult.isDuplicate = true;
-              rowResult.duplicateField = "taxId (ในไฟล์)";
+            for (const taxId of taxIds) {
+              if (!taxId.trim()) continue;
+              const taxKey = `${taxId}_${ownerKey}`;
+              if (seenTaxIds.has(taxKey)) {
+                rowResult.isDuplicate = true;
+                rowResult.duplicateField = "taxId (ในไฟล์)";
+                break;
+              }
+              seenTaxIds.set(taxKey, ownerKey);
             }
-            seenTaxIds.set(taxKey, ownerKey);
           }
         }
 
@@ -153,16 +194,21 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
 
     const customers = validRows.map(row => {
       const idCard = row['เลขบัตรประชาชน'] ? String(row['เลขบัตรประชาชน']) : '';
-      const taxId = row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี'] ? String(row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี']) : '';
+
+      // Parse tax IDs from comma-separated values (like phone numbers)
+      const taxIds = row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี']
+        ? String(row['เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์'] || row['เลขผู้เสียภาษี']).split(',').map(t => t.trim()).filter(t => t)
+        : [];
 
       return {
         name: row['ชื่อลูกค้า/ชื่อร้าน'] || row['ชื่อลูกค้า'] || '',
         idCard: idCard,
         phoneNumbers: String(row['เบอร์โทรศัพท์']).split(',').map(p => p.trim()),
-        taxId: taxId,
+        taxIds: taxIds,
         status: (row['สถานะ']?.toLowerCase() || 'new') as 'new' | 'active' | 'pending',
         ownerId: row.targetOwnerId,
-        ownerName: row.targetOwnerName
+        ownerName: row.targetOwnerName,
+        existingCustomerId: row.existingCustomerId // Add this for UPSERT
       };
     });
 
@@ -190,7 +236,19 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-medium text-slate-900">นำเข้าข้อมูลจาก Excel</h3>
-          <p className="text-sm text-slate-500">ดาวน์โหลดเทมเพลตและกรอกข้อมูลเพื่อนำเข้าแบบกลุ่ม</p>
+          <p className="text-sm text-slate-500">กรอกข้อมูลเพื่อนำเข้าแบบกลุ่ม (รองรับทั้งเพิ่มใหม่และอัปเดต)</p>
+          <div className="mt-2 flex gap-4 text-xs">
+            <span className="flex items-center gap-1 text-slate-600">
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              เพิ่มใหม่: ไม่ต้องระบุหมายเลขระบบ
+            </span>
+            {userRole === 'admin' && (
+              <span className="flex items-center gap-1 text-slate-600">
+                <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                อัปเดต: ต้องระบุคอลัมน์ "หมายเลขระบบ"
+              </span>
+            )}
+          </div>
         </div>
         <Button
           variant="outline"
@@ -222,21 +280,36 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
           />
         </label>
       ) : (
-        <Card className="rounded-2xl border-slate-200 overflow-hidden">
+        <Card className="rounded-2xl border-slate-200 overflow-hidden relative">
           <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="h-5 w-5 text-green-600" />
               <span className="font-medium text-slate-900">{file.name}</span>
+              {isParsing && (
+                <div className="flex items-center gap-2 ml-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm text-slate-600">กำลังอ่านไฟล์...</span>
+                </div>
+              )}
               <div className="flex gap-2 text-xs">
                 {validRows.length > 0 && <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full">ผ่าน {validRows.length}</span>}
                 {invalidRows.length > 0 && <span className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full">ไม่ผ่าน {invalidRows.length}</span>}
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={clearFile} className="text-slate-500 hover:text-red-500">
+            <Button variant="ghost" size="sm" onClick={clearFile} className="text-slate-500 hover:text-red-500" disabled={isParsing}>
               <Trash2 className="h-4 w-4 mr-2" />
               ลบไฟล์
             </Button>
           </div>
+
+          {isParsing && (
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                <p className="text-sm font-medium text-slate-700">กำลังวิเคราะห์ข้อมูล...</p>
+              </div>
+            </div>
+          )}
 
           <CardContent className="p-0">
             <div className="max-h-96 overflow-auto">
@@ -266,11 +339,15 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
                       )}
                       <td className="px-6 py-4">
                         <div className="space-y-1">
-                          {row.isDuplicate && (
+                          {row.isUpsert ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+                              <Upload className="h-3 w-3 mr-1" /> อัปเดตข้อมูลเดิม ({row.existingCustomerId})
+                            </span>
+                          ) : row.isDuplicate ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
                               ข้อมูลซ้ำ ({row.duplicateField})
                             </span>
-                          )}
+                          ) : null}
                           {row.errors.length > 0 ? (
                             <div className="text-xs text-red-500 space-y-0.5">
                               {row.errors.map((err, i) => <p key={i}>• {err}</p>)}
@@ -285,6 +362,8 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
                       <td className="px-6 py-4 text-right">
                         {row.errors.length > 0 ? (
                           <AlertCircle className="h-5 w-5 text-red-500 inline" />
+                        ) : row.isUpsert ? (
+                          <CheckCircle2 className="h-5 w-5 text-indigo-500 inline" />
                         ) : row.isDuplicate ? (
                           <AlertCircle className="h-5 w-5 text-amber-500 inline" />
                         ) : (
@@ -306,7 +385,7 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
           </CardContent>
 
           <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-between gap-3">
-            <Button variant="outline" onClick={clearFile} className="bg-white">
+            <Button variant="outline" onClick={clearFile} className="bg-white" disabled={isParsing}>
               ยกเลิก
             </Button>
 
@@ -316,6 +395,7 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
                   variant="destructive"
                   onClick={handleDownloadErrors}
                   className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+                  disabled={isParsing}
                 >
                   <FileWarning className="h-4 w-4 mr-2" />
                   ดาวน์โหลดรายการที่ผิดพลาด ({invalidRows.length})
@@ -326,6 +406,7 @@ export function ExcelImportView({ onImport, onCheckDuplicate, owners }: ExcelImp
                 <Button
                   onClick={handleImportValid}
                   className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
+                  disabled={isParsing}
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   ยืนยันนำเข้า {validRows.length} รายการ

@@ -5,7 +5,7 @@ import { Label } from '@/app/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/components/ui/table';
 import { Badge } from '@/app/components/ui/badge';
-import { UserPlus, Shield, User, FileSpreadsheet, Download, Edit, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Shield, User, FileSpreadsheet, Download, Edit, Eye, EyeOff, Lock, Trash2, AlertCircle, RefreshCw, CheckCircle } from 'lucide-react';
 import { generateUserTemplate } from '@/app/utils/excel-utils';
 import { toast } from 'sonner';
 import { UserImportDialog } from './user-import-dialog';
@@ -34,14 +34,27 @@ interface UserManagementProps {
   onAddUser: (email: string, password: string, name: string, role: 'admin' | 'sales') => void;
   onBulkAddUsers: (users: Omit<UserData, 'id' | 'status' | 'createdDate'>[]) => void;
   onUpdateUser: (userId: string, updates: Partial<UserData>) => void;
+  onDeactivateUser?: (userId: string) => void;
+  onDeleteUser?: (userId: string) => void;
 }
 
-export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser }: UserManagementProps) {
+export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser, onDeactivateUser, onDeleteUser }: UserManagementProps) {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // For Add User form
   const [showEditPassword, setShowEditPassword] = useState(false); // For Edit User form
+
+  // Deactivate/Delete confirmation
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    type: 'deactivate' | 'delete';
+    user: UserData | null;
+  }>({
+    isOpen: false,
+    type: 'deactivate',
+    user: null,
+  });
 
   const [formData, setFormData] = useState({
     email: '',
@@ -115,6 +128,7 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
                 existingEmails={users.map(u => u.email)}
                 onImport={handleImportSuccess}
               />
+
 
               <Button
                 onClick={() => {
@@ -274,20 +288,56 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
                   </TableCell>
                   <TableCell className="text-slate-600">{user.createdDate}</TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => {
-                        // Clear password field when opening edit modal to indicate "leave blank to keep"
-                        setEditingUser({ ...user, password: '' });
-                        setShowEditPassword(false);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      แก้ไข
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => {
+                          // Clear password field when opening edit modal to indicate "leave blank to keep"
+                          setEditingUser({ ...user, password: '' });
+                          setShowEditPassword(false);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        แก้ไข
+                      </Button>
+                      {user.status === 'active' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                          onClick={() => {
+                            setConfirmDialog({
+                              isOpen: true,
+                              type: 'deactivate',
+                              user
+                            });
+                          }}
+                        >
+                          <Lock className="h-4 w-4 mr-1" />
+                          ปิดใช้งาน
+                        </Button>
+                      )}
+                      {user.status === 'inactive' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            setConfirmDialog({
+                              isOpen: true,
+                              type: 'delete',
+                              user
+                            });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          ลบ
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -376,6 +426,83 @@ export function UserManagement({ users, onAddUser, onBulkAddUsers, onUpdateUser 
                 <Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700">บันทึกการแก้ไข</Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Deactivate/Delete Confirmation Dialog */}
+      {confirmDialog.isOpen && confirmDialog.user && (
+        <Dialog open={confirmDialog.isOpen} onOpenChange={(open) => {
+          if (!open) setConfirmDialog({ ...confirmDialog, isOpen: false });
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="flex items-start gap-4">
+                <div className={`p-3 rounded-full ${confirmDialog.type === 'deactivate'
+                  ? 'bg-amber-100'
+                  : 'bg-red-100'
+                  }`}>
+                  <AlertCircle className={`h-6 w-6 ${confirmDialog.type === 'deactivate'
+                    ? 'text-amber-600'
+                    : 'text-red-600'
+                    }`} />
+                </div>
+                <div className="flex-1">
+                  <DialogTitle className="text-lg">
+                    {confirmDialog.type === 'deactivate'
+                      ? 'ปิดการใช้งานเซลล์'
+                      : 'ลบเซลล์นี้'}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm mt-2">
+                    {confirmDialog.type === 'deactivate'
+                      ? 'คุณต้องการปิดการใช้งานเซลล์นี้หรือไม่ ลูกค้าทั้งหมดจะเปลี่ยนเป็น "เซลล์ว่าง"'
+                      : 'การลบจะไม่สามารถย้อนกลับได้ กรุณายืนยัน'}
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600">ชื่อ:</span>
+                <span className="font-medium text-slate-900">{confirmDialog.user.name}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600">อีเมล:</span>
+                <span className="font-medium text-slate-900 text-sm">{confirmDialog.user.email}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-600">บทบาท:</span>
+                <span className="font-medium text-slate-900">
+                  {confirmDialog.user.role === 'admin' ? 'Admin' : 'Sales'}
+                </span>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                className={`${confirmDialog.type === 'deactivate'
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-red-600 hover:bg-red-700'
+                  } text-white`}
+                onClick={() => {
+                  if (confirmDialog.type === 'deactivate' && onDeactivateUser) {
+                    onDeactivateUser(confirmDialog.user!.id);
+                  } else if (confirmDialog.type === 'delete' && onDeleteUser) {
+                    onDeleteUser(confirmDialog.user!.id);
+                  }
+                  setConfirmDialog({ ...confirmDialog, isOpen: false });
+                }}
+              >
+                {confirmDialog.type === 'deactivate' ? 'ปิดการใช้งาน' : 'ลบ'}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}

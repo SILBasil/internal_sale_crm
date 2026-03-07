@@ -1,4 +1,4 @@
-import { Phone, Mail, Edit, IdCard, Trash2 } from 'lucide-react';
+import { Phone, Mail, Edit, IdCard, Trash2, Building2 } from 'lucide-react';
 import { Badge } from '@/app/components/ui/badge';
 import { Button } from '@/app/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/components/ui/table';
@@ -12,10 +12,11 @@ export interface Customer {
   phoneNumbers_clean?: string[];
   email?: string;
   idCard?: string;
-  taxId?: string;
+  taxIds?: string[]; // Changed from single taxId to array
   status: 'new' | 'active' | 'pending';
   ownerId: string;
   ownerName?: string;
+  search_keywords?: string[];
 }
 
 interface CustomerTableProps {
@@ -109,17 +110,22 @@ export function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProp
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {customer.idCard && (
                           <div className="flex items-center gap-2 text-sm">
                             <IdCard className="h-4 w-4 text-slate-400" />
                             <span className="text-slate-700 font-mono">{customer.idCard}</span>
                           </div>
                         )}
-                        {customer.taxId && (
-                          <p className="text-xs text-slate-500 ml-6 font-mono">
-                            Tax: {customer.taxId}
-                          </p>
+                        {customer.taxIds && customer.taxIds.length > 0 && (
+                          <div className="space-y-2">
+                            {customer.taxIds.map((taxId, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-sm">
+                                <Building2 className="h-4 w-4 text-slate-400" />
+                                <span className="text-slate-700 font-mono">{taxId}</span>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </TableCell>
@@ -130,9 +136,11 @@ export function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProp
                     </TableCell>
                     <TableCell>
                       <p className="text-sm text-slate-700 font-medium">
-                        {customer.ownerName || customer.ownerId}
+                        {customer.ownerName || (customer.ownerId ? customer.ownerId : 'ไม่มีเซลล์')}
                       </p>
-                      <p className="text-[10px] text-slate-400 font-mono leading-none">{customer.ownerId}</p>
+                      {customer.ownerId && (
+                        <p className="text-[10px] text-slate-400 font-mono leading-none">{customer.ownerId}</p>
+                      )}
                     </TableCell>
                     <TableCell>
                       <p className="text-sm text-slate-600">
@@ -227,14 +235,14 @@ export function CustomerTable({ customers, onEdit, onDelete }: CustomerTableProp
                       </div>
                     </div>
 
-                    {customer.ownerName && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500">
-                          {customer.ownerName.charAt(0)}
-                        </div>
-                        <span className="text-sm text-slate-600">ดูแลโดย {customer.ownerName}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                        {(customer.ownerName || 'ไ').charAt(0)}
                       </div>
-                    )}
+                      <span className="text-sm text-slate-600">
+                        ดูแลโดย {customer.ownerName || (customer.ownerId ? customer.ownerId : 'ไม่มีเซลล์')}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="mt-4 flex gap-2">

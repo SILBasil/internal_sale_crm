@@ -10,7 +10,7 @@ import { UserManagement, UserData } from '@/app/components/user-management';
 import { ExcelImportView } from '@/app/components/excel-import-view';
 import { FilterBar } from '@/app/components/filter-bar';
 import { PaginationControls } from '@/app/components/pagination-controls';
-import { exportToExcel } from '@/app/utils/excel-utils';
+import { exportToExcel, exportUnassignedCustomers } from '@/app/utils/excel-utils';
 import { customerService, CustomerQueryOptions } from '@/app/services/customer-service';
 import { userService } from '@/app/services/user-service';
 import { DocumentSnapshot } from 'firebase/firestore';
@@ -103,15 +103,27 @@ export default function App() {
     try {
       toast.info('กำลังเตรียมข้อมูลสำหรับ Export...', { duration: 2000 });
 
-      const options: CustomerQueryOptions = {
-        searchTerm,
-        ownerId: currentView === 'my-customers' ? currentUser?.id : (selectedSalesPerson !== 'all' ? selectedSalesPerson : undefined),
-        status: selectedStatus,
-        startDate: dateRange.start,
-        endDate: dateRange.end
-      };
-
-      const allCustomers = await customerService.getAllMatchingCustomers(options);
+      // Special handling for unassigned customers
+      let allCustomers: Customer[] = [];
+      if (selectedSalesPerson === 'unassigned') {
+        const result = await customerService.getUnassignedCustomers({
+          searchTerm,
+          status: selectedStatus,
+          startDate: dateRange.start,
+          endDate: dateRange.end,
+          pageSize: 10000 // Get all
+        });
+        allCustomers = result.customers;
+      } else {
+        const options: CustomerQueryOptions = {
+          searchTerm,
+          ownerId: currentView === 'my-customers' ? currentUser?.id : (selectedSalesPerson !== 'all' ? selectedSalesPerson : undefined),
+          status: selectedStatus,
+          startDate: dateRange.start,
+          endDate: dateRange.end
+        };
+        allCustomers = await customerService.getAllMatchingCustomers(options);
+      }
 
       if (allCustomers.length === 0) {
         toast.warning('ไม่พบข้อมูลสำหรับ Export');
@@ -122,13 +134,21 @@ export default function App() {
         'ชื่อลูกค้า': c.name,
         'เบอร์โทรศัพท์': c.phoneNumbers.join(', '),
         'เลขบัตรประชาชน': c.idCard || '-',
-        'เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์': c.taxId || '-',
+        'เลขผู้เสียภาษี/เลขทะเบียนพาณิชย์': c.taxIds ? c.taxIds.join(', ') : '-',
         'สถานะ': c.status,
-        'ผู้ดูแล': systemUsers.find(u => u.id === c.ownerId)?.name || 'Unknown',
+        'ผู้ดูแล': systemUsers.find(u => u.id === c.ownerId)?.name || 'ไม่มีเซลล์',
         'วันที่บันทึก': c.date
       }));
 
-      exportToExcel(exportData, currentView === 'my-customers' ? 'my_customers' : 'all_customers');
+      // For unassigned customers, use special export format
+      if (selectedSalesPerson === 'unassigned') {
+        const activeSalesOwners = systemUsers
+          .filter(u => u.role === 'sales' && u.status === 'active')
+          .map(u => ({ name: u.name, email: u.email }));
+        exportUnassignedCustomers(allCustomers, activeSalesOwners);
+      } else {
+        exportToExcel(exportData, currentView === 'my-customers' ? 'my_customers' : 'all_customers');
+      }
       toast.success(`Export ข้อมูล ${allCustomers.length} รายการสำเร็จ`);
     } catch (error) {
       console.error("Export error:", error);
@@ -157,10 +177,10 @@ export default function App() {
         // 2. Fetch True Dashboard Stats (Source of Truth)
         // For Sales, we only care about their own stats
         const salesUsers = isSales
-          ? [{ id: currentUser.id, name: currentUser.name }]
+          ? [{ id: currentUser.id, name: currentUser.name, status: currentUser.status }]
           : systemUsers
-            .filter(u => u.role === 'sales')
-            .map(u => ({ id: u.id, name: u.name }));
+            .filter(u => u.role === 'sales' && u.status === 'active') // Only show ACTIVE sales persons in breakdown
+            .map(u => ({ id: u.id, name: u.name, status: u.status }));
 
         const stats = await customerService.getDashboardStats(
           salesUsers,
@@ -201,23 +221,45 @@ export default function App() {
 
       setIsLoading(true);
       try {
-        const options: CustomerQueryOptions = {
-          searchTerm,
-          ownerId: currentUser?.role === 'sales'
-            ? currentUser.id
-            : (currentView === 'my-customers' ? currentUser?.id : (selectedSalesPerson !== 'all' ? selectedSalesPerson : undefined)),
-          status: selectedStatus,
-          pageSize: PAGE_SIZE,
-          startDate: dateRange?.start,
-          endDate: dateRange?.end
-        };
+        let result, count;
+
+        // Handle unassigned customers separately
+        if (selectedSalesPerson === 'unassigned') {
+          result = await customerService.getUnassignedCustomers({
+            searchTerm,
+            status: selectedStatus,
+            pageSize: PAGE_SIZE,
+            startDate: dateRange?.start,
+            endDate: dateRange?.end
+          });
+
+          // Count unassigned
+          const countResult = await customerService.getUnassignedCustomers({
+            searchTerm,
+            status: selectedStatus,
+            pageSize: 10000,
+            startDate: dateRange?.start,
+            endDate: dateRange?.end
+          });
+          count = countResult.customers.length;
+        } else {
+          const options: CustomerQueryOptions = {
+            searchTerm,
+            ownerId: currentUser?.role === 'sales'
+              ? currentUser.id
+              : (selectedSalesPerson !== 'all' ? selectedSalesPerson : undefined),
+            status: selectedStatus,
+            pageSize: PAGE_SIZE,
+            startDate: dateRange?.start,
+            endDate: dateRange?.end
+          };
+          result = await customerService.getCustomers(options);
+          count = await customerService.getCustomerCount(options);
+        }
 
         // Reset pagination
         setCurrentPage(1);
         setPageCursors(new Map());
-
-        const result = await customerService.getCustomers(options);
-        const count = await customerService.getCustomerCount(options);
 
         setCustomers(result.customers);
         setTotalCount(count);
@@ -339,10 +381,20 @@ export default function App() {
     }
   };
 
-  const handleCheckDuplicate = async (idCard: string, phoneNumbers: string[], taxId?: string, excludeCustomerId?: string, ownerId?: string) => {
+  const handleCheckDuplicate = async (idCard: string, phoneNumbers: string[], taxIds?: string[], excludeCustomerId?: string, ownerId?: string) => {
     // Use server-side check for accurate duplicate detection across all pages
     try {
-      return await customerService.checkDuplicate(idCard, phoneNumbers, taxId, excludeCustomerId, ownerId);
+      const result = await customerService.checkDuplicate(idCard, phoneNumbers, taxIds, excludeCustomerId, ownerId);
+
+      // If ID card is complete, try to get owner info
+      if (idCard && idCard.length === 13) {
+        const ownerInfo = await customerService.getOwnerByIdCard(idCard);
+        if (ownerInfo) {
+          return { ...result, ownerInfo };
+        }
+      }
+
+      return result;
     } catch (error) {
       console.error("Duplicate check failed:", error);
       return { isDuplicate: false, duplicateField: null };
@@ -360,7 +412,7 @@ export default function App() {
       : currentUser.name;
 
     // Strict Server-side Duplicate Check
-    const duplicateCheck = await handleCheckDuplicate(data.idCard || '', data.phoneNumbers, data.taxId, undefined, targetOwnerId);
+    const duplicateCheck = await handleCheckDuplicate(data.idCard || '', data.phoneNumbers, data.taxIds, undefined, targetOwnerId);
     if (duplicateCheck.isDuplicate) {
       toast.error('ไม่สามารถเพิ่มลูกค้าได้', {
         description: duplicateCheck.message || `ตรวจพบข้อมูลซ้ำ: ${duplicateCheck.duplicateField === 'phone' ? 'เบอร์โทรศัพท์' : duplicateCheck.duplicateField === 'idCard' ? 'เลขบัตรประชาชน' : 'เลขผู้เสียภาษี'} มีอยู่ในระบบแล้ว`,
@@ -374,7 +426,7 @@ export default function App() {
       date: new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }),
       phoneNumbers: data.phoneNumbers,
       idCard: data.idCard,
-      taxId: data.taxId,
+      taxIds: data.taxIds, // Changed from single taxId to array
       status: data.status,
       ownerId: targetOwnerId,
       ownerName: targetOwnerName,
@@ -408,14 +460,15 @@ export default function App() {
   const handleBulkAddCustomers = async (newCustomersData: any[], hasErrors: boolean) => {
     if (!currentUser) return;
 
-    const newCustomers: Omit<Customer, 'id'>[] = newCustomersData.map((data: any) => ({
+    const newCustomers = newCustomersData.map((data: any) => ({
+      id: data.existingCustomerId || undefined, // Support UPSERT (Update or Create)
       name: data.name,
       // Date is handled by server timestamp, but keeping local string for display if needed
       date: new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }),
-      phoneNumbers: data.phoneNumbers,
-      idCard: data.idCard,
-      taxId: data.taxId,
-      status: data.status,
+      phoneNumbers: data.phoneNumbers || [],
+      idCard: data.idCard || '',
+      taxIds: data.taxIds || (data.taxId ? [data.taxId] : []), // Support both old and new format
+      status: data.status || 'new',
       // For Admin, use the owner info from Excel if present. For Sales, force their own info.
       ownerId: (currentUser.role === 'admin' && data.ownerId) ? data.ownerId : currentUser.id,
       ownerName: (currentUser.role === 'admin' && data.ownerName) ? data.ownerName : currentUser.name,
@@ -566,33 +619,6 @@ export default function App() {
     }
   };
 
-  const handleFixSystem = async () => {
-    try {
-      toast.promise(
-        async () => {
-          // 1. Cleanup inconsistent data (Trim IDs, Normalize Phone)
-          const cleanCount = await customerService.cleanupData();
-
-          // 2. Sync all User customerCount (Force recount everything)
-          const syncCount = await userService.syncAllUserCounts();
-
-          // 3. Refresh user list in local state
-          const updatedUsers = await userService.getUsers();
-          setSystemUsers(updatedUsers);
-
-          return { cleanCount, syncCount };
-        },
-        {
-          loading: 'กำลังปรับปรุงระบบและซิงค์ข้อมูล...',
-          success: (data) => `ซิงค์แล้ว! ทำความสะอาดข้อมูล: ${data.cleanCount}, อัปเดตยอดผู้ใช้งาน: ${data.syncCount} รายการ`,
-          error: 'เกิดข้อผิดพลาดในการซิงค์ข้อมูล',
-        }
-      );
-    } catch (e) {
-      console.error(e);
-      toast.error('เกิดข้อผิดพลาดในการเข้าถึงระบบ');
-    }
-  };
 
   const handleUpdateUser = async (userId: string, updates: Partial<UserData>) => {
     try {
@@ -605,6 +631,46 @@ export default function App() {
     } catch (e) {
       console.error(e);
       toast.error('เกิดข้อผิดพลาดในการอัปเดตข้อมูล');
+    }
+  };
+
+  const handleDeactivateUser = async (userId: string) => {
+    try {
+      // Release all customers (set ownerId to null)
+      const releaseCount = await customerService.releaseCustomersByUser(userId);
+
+      // Deactivate user
+      await userService.deactivateUser(userId);
+
+      // Refresh user list
+      const updatedUsers = await userService.getUsers();
+      setSystemUsers(updatedUsers);
+
+      toast.success('ปิดการใช้งานเซลล์สำเร็จ', {
+        description: `เซลล์นี้มีลูกค้า ${releaseCount} รายการที่เปลี่ยนเป็น "เซลล์ว่าง"`
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error('เกิดข้อผิดพลาดในการปิดการใช้งานเซลล์');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      // Release all customers first (set ownerId and ownerName to null)
+      await customerService.releaseCustomersByUser(userId);
+
+      // Delete user
+      await userService.deleteUser(userId);
+
+      // Refresh user list
+      const updatedUsers = await userService.getUsers();
+      setSystemUsers(updatedUsers);
+
+      toast.success('ลบเซลล์สำเร็จ');
+    } catch (e) {
+      console.error(e);
+      toast.error('เกิดข้อผิดพลาดในการลบเซลล์');
     }
   };
 
@@ -762,21 +828,37 @@ export default function App() {
               </div>
 
               <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8">
-                <h2 className="text-2xl text-slate-900 mb-6">
+                <h2 className="text-2xl font-bold text-slate-900 mb-6">
                   {addMethod === 'manual' ? 'เพิ่มลูกค้าใหม่' : 'นำเข้าลูกค้าผ่านไฟล์'}
                 </h2>
 
                 {addMethod === 'manual' ? (
                   <CustomerInfoForm
                     onSubmit={handleAddCustomer}
-                    onCheckDuplicate={(id, phones, tax, ownerId) => handleCheckDuplicate(id, phones, tax, undefined, ownerId || currentUser.id)}
-                    owners={currentUser.role === 'admin' ? systemUsers.filter(u => u.role === 'sales').map(u => ({ id: u.id, name: u.name, email: u.email })) : undefined}
+                    onCheckDuplicate={(id, phones, tax, excludeId, ownerId) =>
+                      handleCheckDuplicate(id, phones, tax, excludeId, ownerId || currentUser?.id)
+                    }
+                    owners={currentUser.role === 'admin'
+                      ? systemUsers
+                        .filter(u => u.role === 'sales' && u.status === 'active')
+                        .map(u => ({ id: u.id, name: u.name, email: u.email }))
+                      : undefined
+                    }
+                    initialData={currentUser?.role === 'sales' ? { ownerId: currentUser.id } : undefined}
                   />
                 ) : (
                   <ExcelImportView
                     onImport={handleBulkAddCustomers}
-                    onCheckDuplicate={(id, phones, tax, ownerId) => handleCheckDuplicate(id, phones, tax, undefined, ownerId || currentUser.id)}
-                    owners={currentUser.role === 'admin' ? systemUsers.filter(u => u.role === 'sales').map(u => ({ id: u.id, name: u.name, email: u.email })) : undefined}
+                    onCheckDuplicate={(id, phones, tax, excludeId, ownerId) =>
+                      handleCheckDuplicate(id, phones, tax, excludeId, ownerId || currentUser?.id)
+                    }
+                    userRole={currentUser.role}
+                    owners={currentUser.role === 'admin'
+                      ? systemUsers
+                        .filter(u => u.role === 'sales' && u.status === 'active')
+                        .map(u => ({ id: u.id, name: u.name, email: u.email }))
+                      : undefined
+                    }
                   />
                 )}
               </div>
@@ -796,7 +878,7 @@ export default function App() {
                 onDateChange={(start: string, end: string) => setDateRange({ start, end })}
                 onSalesPersonChange={currentUser.role === 'admin' ? setSelectedSalesPerson : undefined}
                 onExport={handleExport}
-                salesPersons={currentUser.role === 'admin' ? systemUsers.filter(u => u.role === 'sales').map(u => ({ id: u.id, name: u.name })) : undefined}
+                salesPersons={currentUser.role === 'admin' ? systemUsers.filter(u => u.role === 'sales' && u.status === 'active').map(u => ({ id: u.id, name: u.name })) : undefined}
               />
 
               {isLoading ? (
@@ -866,6 +948,8 @@ export default function App() {
                 onAddUser={handleAddUser}
                 onBulkAddUsers={handleBulkAddUsers}
                 onUpdateUser={handleUpdateUser}
+                onDeactivateUser={handleDeactivateUser}
+                onDeleteUser={handleDeleteUser}
               />
             )
           )}

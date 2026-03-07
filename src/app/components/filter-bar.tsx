@@ -85,6 +85,7 @@ export function FilterBar({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">เซลล์ทั้งหมด</SelectItem>
+                <SelectItem value="unassigned">เซลล์ว่าง</SelectItem>
                 {salesPersons.map((sp) => (
                   <SelectItem key={sp.id} value={sp.id}>
                     {sp.name}

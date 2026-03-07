@@ -7,7 +7,7 @@ interface EditCustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (customer: Customer) => void;
-  onCheckDuplicate?: (idCard: string, phoneNumbers: string[], taxId?: string, excludeCustomerId?: string, ownerId?: string) => Promise<{
+  onCheckDuplicate?: (idCard: string, phoneNumbers: string[], taxIds?: string[], excludeCustomerId?: string, ownerId?: string) => Promise<{
     isDuplicate: boolean;
     duplicateField: string | null;
     duplicateValue?: string;
@@ -24,7 +24,7 @@ export function EditCustomerModal({ customer, isOpen, onClose, onSave, onCheckDu
       name: data.name,
       idCard: data.idCard,
       phoneNumbers: data.phoneNumbers,
-      taxId: data.taxId,
+      taxIds: data.taxIds, // Changed from single taxId to array
       status: data.status,
     };
     onSave(updatedCustomer);
@@ -42,14 +42,14 @@ export function EditCustomerModal({ customer, isOpen, onClose, onSave, onCheckDu
               name: customer.name,
               idCard: customer.idCard || '',
               phoneNumbers: customer.phoneNumbers,
-              taxId: customer.taxId || '',
+              taxIds: customer.taxIds || [], // Changed from single taxId to array
               status: customer.status,
             }}
             onSubmit={handleSubmit}
             onCancel={onClose}
-            onCheckDuplicate={(idCard, phones, taxId) =>
+            onCheckDuplicate={(idCard, phones, taxIds) =>
               onCheckDuplicate
-                ? onCheckDuplicate(idCard, phones, taxId, customer.id, customer.ownerId)
+                ? onCheckDuplicate(idCard, phones, taxIds, customer.id, customer.ownerId)
                 : Promise.resolve({ isDuplicate: false, duplicateField: null })
             }
           />

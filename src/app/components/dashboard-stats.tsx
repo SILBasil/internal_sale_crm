@@ -52,8 +52,8 @@ export function DashboardStats({ stats, isLoading, userRole }: DashboardStatsPro
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              จำนวนลูกค้าของเซลล์แต่ละคน
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              สรุปจำนวนลูกค้า
             </h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
